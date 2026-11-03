@@ -19,11 +19,13 @@ export default function InvoiceDashboard() {
   const [selectedClientId, setSelectedClientId] = useState('')
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [taxableAmount, setTaxableAmount] = useState('')
+  const [vatAmount, setVatAmount] = useState('')
+  const [totalAmount, setTotalAmount] = useState('')
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0])
   const [paymentDate, setPaymentDate] = useState('')
   const [invoiceNotes, setInvoiceNotes] = useState('')
 
-  // Filtri di visualizzazione (default 2026)
+  // Filtri di visualizzazione
   const [filterClient, setFilterClient] = useState('')
   const [filterYear, setFilterYear] = useState('2026')
 
@@ -52,14 +54,12 @@ export default function InvoiceDashboard() {
       .select('issuedate')
     
     const yearsSet = new Set()
-    // Aggiungiamo sempre l'anno corrente (2026) e eventuali anni recenti per sicurezza
     yearsSet.add('2026')
     yearsSet.add(new Date().getFullYear().toString())
 
     if (!error && data) {
       data.forEach(item => {
         if (item.issuedate) {
-          // Estrae i primi 4 caratteri della data (l'anno) indipendentemente dal formato stringa
           const yearValue = String(item.issuedate).substring(0, 4)
           if (yearValue && !isNaN(yearValue) && yearValue.length === 4) {
             yearsSet.add(yearValue)
@@ -75,7 +75,7 @@ export default function InvoiceDashboard() {
   async function loadInvoices() {
     let query = supabaseClient
       .from('invoices')
-      .select('id, invoicenumber, clientid, issuedate, paymentdate, taxableamount, note, clients(name)')
+      .select('id, invoicenumber, clientid, issuedate, paymentdate, taxableamount, vatamount, totalamount, note, clients(name)')
 
     if (filterClient) {
       query = query.eq('clientid', filterClient)
@@ -98,6 +98,8 @@ export default function InvoiceDashboard() {
     setCurrentInvoiceId(null)
     setSelectedClientId('')
     setTaxableAmount('')
+    setVatAmount('')
+    setTotalAmount('')
     setPaymentDate('')
     setInvoiceNotes('')
     setInvoiceDate(new Date().toISOString().split('T')[0])
@@ -129,7 +131,9 @@ export default function InvoiceDashboard() {
     setCurrentInvoiceId(invoiceItem.id)
     setSelectedClientId(invoiceItem.clientid)
     setInvoiceNumber(invoiceItem.invoicenumber.toString())
-    setTaxableAmount(invoiceItem.taxableamount.toString())
+    setTaxableAmount(invoiceItem.taxableamount != null ? invoiceItem.taxableamount.toString() : '')
+    setVatAmount(invoiceItem.vatamount != null ? invoiceItem.vatamount.toString() : '')
+    setTotalAmount(invoiceItem.totalamount != null ? invoiceItem.totalamount.toString() : '')
     setInvoiceDate(invoiceItem.issuedate)
     setPaymentDate(invoiceItem.paymentdate || '')
     setInvoiceNotes(invoiceItem.note || '')
@@ -144,7 +148,9 @@ export default function InvoiceDashboard() {
       clientid: selectedClientId,
       issuedate: invoiceDate,
       paymentdate: paymentDate || null,
-      taxableamount: Number(taxableAmount),
+      taxableamount: taxableAmount ? Number(taxableAmount) : null,
+      vatamount: vatAmount ? Number(vatAmount) : null,
+      totalamount: totalAmount ? Number(totalAmount) : null,
       note: invoiceNotes || null
     }
 
@@ -247,6 +253,8 @@ export default function InvoiceDashboard() {
                     <th className="py-4 px-6">Data Pagamento</th>
                     <th className="py-4 px-6">Cliente</th>
                     <th className="py-4 px-6">Imponibile</th>
+                    <th className="py-4 px-6">IVA</th>
+                    <th className="py-4 px-6">Incasso</th>
                     <th className="py-4 px-6">Note</th>
                     <th className="py-4 px-6 text-right">Azioni</th>
                   </tr>
@@ -270,8 +278,14 @@ export default function InvoiceDashboard() {
                       <td className="py-4 px-6 font-medium text-white">
                         {invoiceItem.clients?.name || 'Cliente non specificato'}
                       </td>
+                      <td className="py-4 px-6 text-slate-300">
+                        {invoiceItem.taxableamount != null ? `€ ${Number(invoiceItem.taxableamount).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
+                      </td>
+                      <td className="py-4 px-6 text-slate-300">
+                        {invoiceItem.vatamount != null ? `€ ${Number(invoiceItem.vatamount).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
+                      </td>
                       <td className="py-4 px-6 font-semibold text-emerald-400">
-                        € {Number(invoiceItem.taxableamount).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {invoiceItem.totalamount != null ? `€ ${Number(invoiceItem.totalamount).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
                       </td>
                       <td className="py-4 px-6 text-slate-400 max-w-xs truncate">
                         {invoiceItem.note || '-'}
@@ -288,7 +302,7 @@ export default function InvoiceDashboard() {
                   ))}
                   {invoicesList.length === 0 && (
                     <tr>
-                      <td colSpan="7" className="py-12 text-center text-slate-500 font-medium">
+                      <td colSpan="9" className="py-12 text-center text-slate-500 font-medium">
                         Nessuna fattura trovata con i filtri selezionati.
                       </td>
                     </tr>
@@ -303,7 +317,7 @@ export default function InvoiceDashboard() {
         {/* Modal Modifica/Inserimento */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-6">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-6">
               <div className="flex justify-between items-center border-b border-slate-700 pb-4">
                 <h2 className="text-xl font-bold text-white">
                   {isEditMode ? 'Modifica Fattura' : 'Nuova Fattura'}
@@ -357,9 +371,9 @@ export default function InvoiceDashboard() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Imponibile (€) *</label>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Imponibile (€)</label>
                     <input 
                       type="number" 
                       step="0.01" 
@@ -367,24 +381,46 @@ export default function InvoiceDashboard() {
                       value={taxableAmount}
                       onChange={(e) => setTaxableAmount(e.target.value)}
                       placeholder="0.00"
-                      required
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Data Pagamento</label>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">IVA (€)</label>
                     <input 
-                      type="date" 
+                      type="number" 
+                      step="0.01" 
                       className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
-                      value={paymentDate}
-                      onChange={(e) => setPaymentDate(e.target.value)}
+                      value={vatAmount}
+                      onChange={(e) => setVatAmount(e.target.value)}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Incasso (€)</label>
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                      value={totalAmount}
+                      onChange={(e) => setTotalAmount(e.target.value)}
+                      placeholder="0.00"
                     />
                   </div>
                 </div>
 
                 <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Data Pagamento</label>
+                  <input 
+                    type="date" 
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                    value={paymentDate}
+                    onChange={(e) => setPaymentDate(e.target.value)}
+                  />
+                </div>
+
+                <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Note</label>
                   <textarea 
-                    rows="3"
+                    rows="2"
                     className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
                     value={invoiceNotes}
                     onChange={(e) => setInvoiceNotes(e.target.value)}
