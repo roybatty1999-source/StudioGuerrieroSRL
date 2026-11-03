@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import Head from 'next/head'
 
@@ -34,23 +34,28 @@ export default function InvoiceDashboard() {
 
   // Stati per i menu a tendina di selezione interattiva (Modifica/Cancella)
   const [isSelectClientModalOpen, setIsSelectClientModalOpen] = useState(false)
-  const [clientActionType, setClientActionType] = useState('edit') // 'edit' o 'delete'
+  const [clientActionType, setClientActionType] = useState('edit')
   const [targetClientId, setTargetClientId] = useState('')
 
   const [isSelectInvoiceModalOpen, setIsSelectInvoiceModalOpen] = useState(false)
-  const [invoiceActionType, setInvoiceActionType] = useState('edit') // 'edit' o 'delete'
+  const [invoiceActionType, setInvoiceActionType] = useState('edit')
   const [targetInvoiceId, setTargetInvoiceId] = useState('')
 
   // Stati per i menu a tendina (Dropdown) della barra superiore
   const [clientMenuOpen, setClientMenuOpen] = useState(false)
   const [invoiceMenuOpen, setInvoiceMenuOpen] = useState(false)
 
-  // Stati per la vista Prospetto
+  // Stati per la vista Prospetto Cliente
   const [isProspectOpen, setIsProspectOpen] = useState(false)
   const [prospectClientId, setProspectClientId] = useState('')
   const [prospectInvoices, setProspectInvoices] = useState([])
   const [prospectFilterYear, setProspectFilterYear] = useState('')
   const [prospectFilterStatus, setProspectFilterStatus] = useState('all')
+
+  // Stati per la vista Gestione (Prospetto Generale & Grafico)
+  const [isManagementOpen, setIsManagementOpen] = useState(false)
+  const chartRef = useRef(null)
+  const chartInstanceRef = useRef(null)
 
   // Campi del form inserimento/modifica fattura
   const [selectedClientId, setSelectedClientId] = useState('')
@@ -84,6 +89,75 @@ export default function InvoiceDashboard() {
       setProspectFilterStatus('all')
     }
   }, [isProspectOpen, prospectClientId])
+
+  // Gestione rendering del grafico a linee nella modale di Gestione
+  useEffect(() => {
+    if (isManagementOpen) {
+      // Carica Chart.js da CDN se non presente
+      if (!window.Chart) {
+        const script = document.createElement('script')
+        script.src = 'https://cdn.jsdelivr.net/npm/chart.js'
+        script.async = true
+        script.onload = () => renderManagementChart()
+        document.body.appendChild(script)
+      } else {
+        renderManagementChart()
+      }
+    }
+    return () => {
+      if (chartInstanceRef.current) {
+        chartInstanceRef.current.destroy()
+        chartInstanceRef.current = null
+      }
+    }
+  }, [isManagementOpen, invoicesList])
+
+  function renderManagementChart() {
+    if (!chartRef.current) return
+    if (chartInstanceRef.current) {
+      chartInstanceRef.current.destroy()
+    }
+
+    const { generalByYear, allGeneralYears } = calculateGeneralManagementSummary()
+    const sortedYears = [...allGeneralYears].sort((a, b) => Number(a) - Number(b))
+    const taxableData = sortedYears.map(year => generalByYear[year]?.taxable || 0)
+
+    const ctx = chartRef.current.getContext('2d')
+    chartInstanceRef.current = new window.Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: sortedYears,
+        datasets: [{
+          label: 'Imponibile (€)',
+          data: taxableData,
+          borderColor: '#818cf8',
+          backgroundColor: 'rgba(129, 140, 248, 0.1)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.3,
+          pointBackgroundColor: '#818cf8',
+          pointRadius: 5
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: '#cbd5e1' } }
+        },
+        scales: {
+          x: { 
+            grid: { color: 'rgba(51, 65, 85, 0.4)' },
+            ticks: { color: '#cbd5e1' }
+          },
+          y: { 
+            grid: { color: 'rgba(51, 65, 85, 0.4)' },
+            ticks: { color: '#cbd5e1' }
+          }
+        }
+      }
+    })
+  }
 
   // Calcolo automatico di IVA e Incasso al variare dell'Imponibile
   useEffect(() => {
@@ -362,7 +436,47 @@ export default function InvoiceDashboard() {
     }
   }
 
-  // Calcoli per il prospetto (raggruppamento per anno di emissione)
+  // Calcoli per il prospetto generale (Gestione)
+  function calculateGeneralManagementSummary() {
+    const generalByYear = {}
+    let totalCount = 0
+    let totalTaxable = 0
+    let totalVat = 0
+    let totalIncasso = 0
+
+    invoicesList.forEach(item => {
+      if (!item.issuedate) return
+      const year = item.issuedate.substring(0, 4)
+      const tax = Number(item.taxableamount) || 0
+      const vat = Number(item.vatamount) || 0
+      const tot = Number(item.totalamount) || 0
+
+      if (!generalByYear[year]) {
+        generalByYear[year] = { count: 0, taxable: 0, vat: 0, total: 0 }
+      }
+      generalByYear[year].count += 1
+      generalByYear[year].taxable += tax
+      generalByYear[year].vat += vat
+      generalByYear[year].total += tot
+
+      totalCount += 1
+      totalTaxable += tax
+      totalVat += vat
+      totalIncasso += tot
+    })
+
+    const allGeneralYears = Object.keys(generalByYear)
+    return {
+      generalByYear,
+      allGeneralYears,
+      totals: { count: totalCount, taxable: totalTaxable, vat: totalVat, total: totalIncasso }
+    }
+  }
+
+  const { generalByYear, allGeneralYears, totals: generalTotals } = calculateGeneralManagementSummary()
+  const sortedGeneralYears = [...allGeneralYears].sort((a, b) => Number(b) - Number(a))
+
+  // Calcoli per il prospetto cliente
   function calculateProspectSummary() {
     const paidByYear = {}
     const unpaidByYear = {}
@@ -561,7 +675,7 @@ export default function InvoiceDashboard() {
       <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-4 sm:p-8">
         <div className="max-w-7xl mx-auto space-y-6 no-print">
           
-          {/* Header con menu a tendina */}
+          {/* Header con menu a tendina e pulsante Gestione */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl relative z-20">
             <div>
               <h1 className="text-3xl font-extrabold text-white tracking-tight">Gestionale Fatture</h1>
@@ -609,14 +723,25 @@ export default function InvoiceDashboard() {
                 )}
               </div>
 
+              {/* Pulsante Gestione */}
+              <button 
+                onClick={() => setIsManagementOpen(true)}
+                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg shadow-indigo-600/30 transition-all duration-200 text-sm"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Gestione
+              </button>
+
               <button 
                 onClick={() => setIsProspectOpen(true)}
                 className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg transition-all duration-200 border border-slate-600 text-sm"
               >
                 <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 4v12l-4-2-4 2V4M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                Prospetto
+                Prospetto Cliente
               </button>
             </div>
           </div>
@@ -733,7 +858,82 @@ export default function InvoiceDashboard() {
 
         </div>
 
-        {/* Modal Selezione Cliente per Modifica/Cancella tramite menu a tendina */}
+        {/* Modal Gestione (Prospetto Generale & Grafico) */}
+        {isManagementOpen && (
+          <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-5xl w-full shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+              
+              <div className="flex justify-between items-center border-b border-slate-700 pb-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Prospetto Generale di Gestione</h2>
+                  <p className="text-slate-400 text-sm mt-1">Riepilogo finanziario complessivo di tutte le fatture suddiviso per anno</p>
+                </div>
+                <button 
+                  onClick={() => setIsManagementOpen(false)} 
+                  className="text-slate-400 hover:text-white p-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
+                >
+                  ✕ Chiudi
+                </button>
+              </div>
+
+              {/* Tabella Prospetto Generale */}
+              <div className="bg-slate-900 p-5 rounded-xl border border-slate-700 shadow-inner space-y-3">
+                <h3 className="text-indigo-400 font-bold uppercase tracking-wider text-sm flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-indigo-400"></span> Totali per Anno di Emissione
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-800 text-slate-400">
+                        <th className="py-3 px-4">Anno</th>
+                        <th className="py-3 px-4 text-center">N° Fatture</th>
+                        <th className="py-3 px-4 text-right">Imponibile</th>
+                        <th className="py-3 px-4 text-right">IVA</th>
+                        <th className="py-3 px-4 text-right">Incasso Totale</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800">
+                      {sortedGeneralYears.map(year => {
+                        const data = generalByYear[year]
+                        return (
+                          <tr key={`general-${year}`} className="hover:bg-slate-800/50">
+                            <td className="py-3 px-4 font-semibold text-white">{year}</td>
+                            <td className="py-3 px-4 text-center text-slate-300">{data.count}</td>
+                            <td className="py-3 px-4 text-right text-slate-300">€ {data.taxable.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <td className="py-3 px-4 text-right text-slate-300">€ {data.vat.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <td className="py-3 px-4 text-right font-bold text-emerald-400">€ {data.total.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t-2 border-indigo-500/40 bg-slate-950/60 font-bold">
+                        <td className="py-3 px-4 text-white uppercase text-xs">Totale Generale</td>
+                        <td className="py-3 px-4 text-center text-white">{generalTotals.count}</td>
+                        <td className="py-3 px-4 text-right text-slate-200">€ {generalTotals.taxable.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="py-3 px-4 text-right text-slate-200">€ {generalTotals.vat.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="py-3 px-4 text-right text-emerald-400">€ {generalTotals.total.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+
+              {/* Grafico a linee (Imponibile per Anno) */}
+              <div className="bg-slate-900 p-5 rounded-xl border border-slate-700 shadow-inner space-y-3">
+                <h3 className="text-white font-bold uppercase tracking-wider text-sm flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-indigo-400"></span> Andamento Imponibile per Anno
+                </h3>
+                <div className="h-72 relative w-full">
+                  <canvas ref={chartRef}></canvas>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* Modal Selezione Cliente per Modifica/Cancella */}
         {isSelectClientModalOpen && (
           <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
             <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6">
@@ -779,7 +979,7 @@ export default function InvoiceDashboard() {
           </div>
         )}
 
-        {/* Modal Selezione Fattura per Modifica/Cancella tramite menu a tendina */}
+        {/* Modal Selezione Fattura per Modifica/Cancella */}
         {isSelectInvoiceModalOpen && (
           <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
             <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6">
@@ -879,7 +1079,7 @@ export default function InvoiceDashboard() {
           </div>
         )}
 
-        {/* Modal Prospetto */}
+        {/* Modal Prospetto Cliente */}
         {isProspectOpen && (
           <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
             <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-6xl w-full shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto printable-prospect-container">
