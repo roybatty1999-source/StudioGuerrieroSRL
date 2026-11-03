@@ -520,7 +520,7 @@ export default function InvoiceDashboard() {
               {prospectClientId ? (
                 <div className="space-y-8">
                   
-                  {/* Sezione Tabelle di Riepilogo per Anno (Pagate e Da Pagare) */}
+                  {/* Sezione Tabelle di Riepilogo per Anno (Pagate e Da Pagare con IVA e Incasso) */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     
                     {/* Tabella Pagate */}
