@@ -24,6 +24,7 @@ export default function InvoiceDashboard() {
   const [isProspectOpen, setIsProspectOpen] = useState(false)
   const [prospectClientId, setProspectClientId] = useState('')
   const [prospectInvoices, setProspectInvoices] = useState([])
+  const [prospectFilterYear, setProspectFilterYear] = useState('')
 
   // Campi del form inserimento/modifica fattura
   const [selectedClientId, setSelectedClientId] = useState('')
@@ -53,6 +54,7 @@ export default function InvoiceDashboard() {
       loadProspectData(prospectClientId)
     } else {
       setProspectInvoices([])
+      setProspectFilterYear('')
     }
   }, [isProspectOpen, prospectClientId])
 
@@ -179,6 +181,13 @@ export default function InvoiceDashboard() {
 
   const { paidByYear, unpaidByYear } = calculateProspectSummary()
   const allProspectYears = Array.from(new Set([...Object.keys(paidByYear), ...Object.keys(unpaidByYear)])).sort((a, b) => Number(b) - Number(a))
+
+  // Fatture filtrate per anno nel prospetto
+  const filteredProspectInvoices = prospectInvoices.filter(item => {
+    if (!prospectFilterYear) return true
+    if (!item.issuedate) return false
+    return item.issuedate.substring(0, 4) === prospectFilterYear
+  })
 
   async function openInsertModal() {
     setIsEditMode(false)
@@ -494,7 +503,10 @@ export default function InvoiceDashboard() {
                 <select 
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   value={prospectClientId}
-                  onChange={(e) => setProspectClientId(e.target.value)}
+                  onChange={(e) => {
+                    setProspectClientId(e.target.value)
+                    setProspectFilterYear('')
+                  }}
                 >
                   <option value="">-- Scegli un cliente --</option>
                   {clientsList.map((clientItem) => (
@@ -577,47 +589,64 @@ export default function InvoiceDashboard() {
 
                   </div>
 
+                  {/* Sezione Filtro Anno per l'Elenco Fatture del Prospetto */}
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 p-4 rounded-xl border border-slate-700">
+                    <h3 className="text-white font-bold text-sm">Elenco Fatture del Cliente</h3>
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                      <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Filtra Anno:</label>
+                      <select 
+                        className="bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-40"
+                        value={prospectFilterYear}
+                        onChange={(e) => setProspectFilterYear(e.target.value)}
+                      >
+                        <option value="">Tutti gli anni</option>
+                        {allProspectYears.map(yearItem => (
+                          <option key={`prospect-filter-${yearItem}`} value={yearItem}>
+                            {yearItem}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
                   {/* Tabella Dettaglio Fatture del Cliente */}
-                  <div className="space-y-3">
-                    <h3 className="text-white font-bold text-sm">Elenco Fatture del Cliente Selezionato</h3>
-                    <div className="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden">
-                      <div className="overflow-x-auto max-h-64 overflow-y-auto">
-                        <table className="w-full text-left border-collapse text-xs">
-                          <thead className="sticky top-0 bg-slate-950 text-slate-400 uppercase tracking-wider">
-                            <tr>
-                              <th className="py-3 px-4">Data Emissione</th>
-                              <th className="py-3 px-4">N° Fattura</th>
-                              <th className="py-3 px-4">Imponibile</th>
-                              <th className="py-3 px-4">IVA</th>
-                              <th className="py-3 px-4">Incasso</th>
-                              <th className="py-3 px-4">Data Incasso (Pagamento)</th>
+                  <div className="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden">
+                    <div className="overflow-x-auto max-h-64 overflow-y-auto">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead className="sticky top-0 bg-slate-950 text-slate-400 uppercase tracking-wider">
+                          <tr>
+                            <th className="py-3 px-4">Data Emissione</th>
+                            <th className="py-3 px-4">N° Fattura</th>
+                            <th className="py-3 px-4">Imponibile</th>
+                            <th className="py-3 px-4">IVA</th>
+                            <th className="py-3 px-4">Incasso</th>
+                            <th className="py-3 px-4">Data Incasso (Pagamento)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800">
+                          {filteredProspectInvoices.map((item) => (
+                            <tr key={item.id} className="hover:bg-slate-800/40">
+                              <td className="py-3 px-4 text-slate-300">{item.issuedate}</td>
+                              <td className="py-3 px-4 font-bold text-indigo-400">#{item.invoicenumber}</td>
+                              <td className="py-3 px-4 text-slate-300">€ {Number(item.taxableamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="py-3 px-4 text-slate-300">€ {Number(item.vatamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="py-3 px-4 font-semibold text-emerald-400">€ {Number(item.totalamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="py-3 px-4">
+                                {item.paymentdate ? (
+                                  <span className="text-emerald-400 font-medium">{item.paymentdate}</span>
+                                ) : (
+                                  <span className="text-amber-500 italic">Da pagare</span>
+                                )}
+                              </td>
                             </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-800">
-                            {prospectInvoices.map((item) => (
-                              <tr key={item.id} className="hover:bg-slate-800/40">
-                                <td className="py-3 px-4 text-slate-300">{item.issuedate}</td>
-                                <td className="py-3 px-4 font-bold text-indigo-400">#{item.invoicenumber}</td>
-                                <td className="py-3 px-4 text-slate-300">€ {Number(item.taxableamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                <td className="py-3 px-4 text-slate-300">€ {Number(item.vatamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                <td className="py-3 px-4 font-semibold text-emerald-400">€ {Number(item.totalamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                <td className="py-3 px-4">
-                                  {item.paymentdate ? (
-                                    <span className="text-emerald-400 font-medium">{item.paymentdate}</span>
-                                  ) : (
-                                    <span className="text-amber-500 italic">Da pagare</span>
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
-                            {prospectInvoices.length === 0 && (
-                              <tr>
-                                <td colSpan="6" className="py-8 text-center text-slate-500">Nessuna fattura registrata per questo cliente.</td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
+                          ))}
+                          {filteredProspectInvoices.length === 0 && (
+                            <tr>
+                              <td colSpan="6" className="py-8 text-center text-slate-500">Nessuna fattura trovata per l'anno selezionato.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
 
