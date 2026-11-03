@@ -293,6 +293,15 @@ export default function InvoiceDashboard() {
       <Head>
         <title>Gestionale Fatture</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <style dangerouslySetInnerHTML={{__html: `
+          @media print {
+            body { background: white !important; color: black !important; }
+            .no-print { display: none !important; }
+            .print-container { background: white !important; border: none !important; box-shadow: none !important; padding: 0 !important; max-width: 100% !important; }
+            table { width: 100% !important; border-collapse: collapse !important; }
+            th, td { border: 1px solid #cbd5e1 !important; color: black !important; padding: 6px !important; }
+          }
+        `}} />
       </Head>
       
       <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-4 sm:p-8">
@@ -492,22 +501,33 @@ export default function InvoiceDashboard() {
         {/* Modal Prospetto */}
         {isProspectOpen && (
           <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-6xl w-full shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-6xl w-full shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto print-container">
               <div className="flex justify-between items-center border-b border-slate-700 pb-4">
                 <div>
                   <h2 className="text-2xl font-bold text-white">Prospetto Finanziario Cliente</h2>
                   <p className="text-slate-400 text-sm mt-1">Seleziona un cliente per visualizzare il dettaglio e i totali per anno</p>
                 </div>
-                <button 
-                  onClick={() => setIsProspectOpen(false)} 
-                  className="text-slate-400 hover:text-white p-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
-                >
-                  ✕ Chiudi
-                </button>
+                <div className="flex items-center gap-3 no-print">
+                  <button 
+                    onClick={() => window.print()} 
+                    className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold text-sm shadow-lg transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                    Stampa Prospetto
+                  </button>
+                  <button 
+                    onClick={() => setIsProspectOpen(false)} 
+                    className="text-slate-400 hover:text-white p-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
+                  >
+                    ✕ Chiudi
+                  </button>
+                </div>
               </div>
 
               {/* Selezione Cliente per il Prospetto */}
-              <div className="bg-slate-900 p-4 rounded-xl border border-slate-700 max-w-md">
+              <div className="bg-slate-900 p-4 rounded-xl border border-slate-700 max-w-md no-print">
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Seleziona Cliente</label>
                 <select 
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -600,7 +620,7 @@ export default function InvoiceDashboard() {
                   </div>
 
                   {/* Sezione Filtri Anno e Stato per l'Elenco Fatture del Prospetto */}
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 p-4 rounded-xl border border-slate-700">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 p-4 rounded-xl border border-slate-700 no-print">
                     <h3 className="text-white font-bold text-sm">Elenco Fatture del Cliente</h3>
                     <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                       <div className="flex items-center gap-2 flex-1 sm:flex-initial">
