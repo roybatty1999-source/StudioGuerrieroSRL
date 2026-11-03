@@ -252,7 +252,7 @@ export default function InvoiceDashboard() {
   // Nome del cliente attualmente selezionato nel prospetto
   const currentSelectedClientName = clientsList.find(c => c.id === prospectClientId)?.name || ''
 
-  // Fatture filtrate per anno e per stato nel prospetto
+  // Fatture filtrate per anno e per stato nel prospetto (a schermo)
   const filteredProspectInvoices = prospectInvoices.filter(item => {
     const matchesYear = !prospectFilterYear || (item.issuedate && item.issuedate.substring(0, 4) === prospectFilterYear)
     
@@ -352,22 +352,67 @@ export default function InvoiceDashboard() {
         <style dangerouslySetInnerHTML={{__html: `
           @page {
             size: portrait;
-            margin: 10mm;
+            margin: 15mm;
           }
           @media print {
-            body { background: white !important; color: black !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-family: sans-serif; }
+            /* Nasconde totalmente l'intera webapp */
+            body * {
+              visibility: hidden !important;
+            }
+            /* Rende visibile solo il contenitore del prospetto e i suoi figli */
+            .printable-prospect-area, .printable-prospect-area * {
+              visibility: visible !important;
+            }
+            /* Posiziona l'area di stampa in alto a sinistra senza sfondi o bordi scuri */
+            .printable-prospect-area {
+              position: absolute !important;
+              left: 0 !important;
+              top: 0 !important;
+              width: 100% !important;
+              background: white !important;
+              color: black !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              box-shadow: none !important;
+              border: none !important;
+            }
             .no-print { display: none !important; }
-            .print-container { background: white !important; border: none !important; box-shadow: none !important; padding: 0 !important; max-width: 100% !important; width: 100% !important; margin: 0 !important; }
-            .fixed { position: static !important; background: none !important; }
-            .backdrop-blur-md { backdrop-filter: none !important; }
             
-            /* Layout pulito per stampa */
-            .print-header-name { display: block !important; text-align: center !important; font-size: 22px !important; font-weight: bold !important; margin-bottom: 20px !important; color: black !important; }
-            .print-section-title { font-size: 14px !important; font-weight: bold !important; margin-top: 15px !important; margin-bottom: 5px !important; color: black !important; }
-            
-            table { width: 100% !important; border-collapse: collapse !important; margin-bottom: 15px !important; page-break-inside: avoid; }
-            th, td { border: 1px solid #94a3b8 !important; color: black !important; padding: 6px 8px !important; font-size: 11px !important; background: white !important; }
-            th { background-color: #f1f5f9 !important; font-weight: bold !important; text-align: left; }
+            /* Stile minimale e pulito per la stampa */
+            .print-header-name {
+              display: block !important;
+              text-align: center !important;
+              font-size: 20px !important;
+              font-weight: bold !important;
+              margin-bottom: 25px !important;
+              color: black !important;
+              text-transform: uppercase;
+            }
+            .print-section-title {
+              font-size: 13px !important;
+              font-weight: bold !important;
+              margin-top: 20px !important;
+              margin-bottom: 6px !important;
+              color: black !important;
+            }
+            table {
+              width: 100% !important;
+              border-collapse: collapse !important;
+              margin-bottom: 15px !important;
+              page-break-inside: avoid;
+            }
+            th, td {
+              border: 1px solid #334155 !important;
+              color: black !important;
+              padding: 5px 8px !important;
+              font-size: 11px !important;
+              background: white !important;
+            }
+            th {
+              background-color: #f1f5f9 !important;
+              font-weight: bold !important;
+              text-align: left;
+            }
             .text-right { text-align: right !important; }
           }
         `}} />
@@ -570,7 +615,7 @@ export default function InvoiceDashboard() {
         {/* Modal Prospetto */}
         {isProspectOpen && (
           <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-6xl w-full shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto print-container">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-6xl w-full shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto printable-prospect-area">
               <div className="flex justify-between items-center border-b border-slate-700 pb-4 no-print">
                 <div>
                   <h2 className="text-2xl font-bold text-white">Prospetto Finanziario Cliente</h2>
@@ -728,7 +773,7 @@ export default function InvoiceDashboard() {
                     </div>
                   </div>
 
-                  {/* Tabella Dettaglio Fatture del Cliente (A schermo rispetta i filtri, in stampa mostra sempre l'elenco delle non pagate) */}
+                  {/* Tabella Dettaglio Fatture del Cliente */}
                   <div className="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden">
                     <div className="p-3 bg-slate-950 font-bold text-xs uppercase tracking-wider text-slate-300 print-section-title">
                       Elenco Fatture Non Pagate
@@ -755,7 +800,7 @@ export default function InvoiceDashboard() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800">
-                          {/* A schermo mostra il filtro scelto, in stampa mostra rigorosamente le non pagate */}
+                          {/* A schermo mostra il filtro scelto */}
                           <div className="contents print:hidden">
                             {filteredProspectInvoices.map((item) => (
                               <tr key={item.id} className="hover:bg-slate-800/40">
