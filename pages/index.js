@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import Head from 'next/head'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -67,7 +68,6 @@ export default function InvoiceDashboard() {
     setInvoiceNotes('')
     setInvoiceDate(new Date().toISOString().split('T')[0])
 
-    // Calcola il prossimo numero fattura in base all'anno attuale
     const currentYearValue = new Date().getFullYear()
     const startDate = `${currentYearValue}-01-01`
     const endDate = `${currentYearValue}-12-31`
@@ -128,7 +128,7 @@ export default function InvoiceDashboard() {
         .insert([invoicePayload])
 
       if (error) {
-        alert('Errore durante l\'inserimento: ' + error.message)
+        alert("Errore durante l'inserimento: " + error.message)
         return
       }
     }
@@ -138,175 +138,219 @@ export default function InvoiceDashboard() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto font-sans">
-      <h1 className="text-2xl font-bold mb-6">Gestione Fatture</h1>
-
-      {/* Sezione Filtri e Pulsante Inserisci */}
-      <div className="flex flex-wrap gap-4 mb-6 items-center justify-between bg-gray-50 p-4 rounded shadow-sm">
-        <div className="flex gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Filtra per Cliente</label>
-            <select 
-              className="border p-2 rounded bg-white"
-              value={filterClient}
-              onChange={(e) => setFilterClient(e.target.value)}
+    <>
+      <Head>
+        <title>Gestionale Fatture</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+      </Head>
+      
+      <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-4 sm:p-8">
+        <div className="max-w-7xl mx-auto space-y-6">
+          
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
+            <div>
+              <h1 className="text-3xl font-extrabold text-white tracking-tight">Gestionale Fatture</h1>
+              <p className="text-slate-400 text-sm mt-1">Gestisci, filtra ed emetti le tue fatture in modo semplice</p>
+            </div>
+            <button 
+              onClick={openInsertModal}
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-indigo-600/30 transition-all duration-200"
             >
-              <option value="">Tutti i clienti</option>
-              {clientsList.map((clientItem) => (
-                <option key={clientItem.id} value={clientItem.id}>
-                  {clientItem.name}
-                </option>
-              ))}
-            </select>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Nuova Fattura
+            </button>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Filtra per Anno</label>
-            <input 
-              type="text" 
-              className="border p-2 rounded w-28 bg-white"
-              value={filterYear}
-              onChange={(e) => setFilterYear(e.target.value)}
-            />
+          {/* Bar Filtri */}
+          <div className="bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-lg flex flex-col md:flex-row gap-4 items-end">
+            <div className="flex-1 w-full">
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Cliente</label>
+              <select 
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                value={filterClient}
+                onChange={(e) => setFilterClient(e.target.value)}
+              >
+                <option value="">Tutti i clienti ({clientsList.length})</option>
+                {clientsList.map((clientItem) => (
+                  <option key={clientItem.id} value={clientItem.id}>
+                    {clientItem.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="w-full md:w-48">
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Anno di emissione</label>
+              <input 
+                type="text" 
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                value={filterYear}
+                onChange={(e) => setFilterYear(e.target.value)}
+                placeholder="AAAA"
+              />
+            </div>
           </div>
-        </div>
 
-        <button 
-          onClick={openInsertModal}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-semibold"
-        >
-          Inserisci Fattura
-        </button>
-      </div>
-
-      {/* Tabella Visualizza Fatture */}
-      <div className="overflow-x-auto bg-white rounded shadow">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-100 border-b">
-              <th className="p-3">N. Fattura</th>
-              <th className="p-3">Data</th>
-              <th className="p-3">Cliente</th>
-              <th className="p-3">Imponibile (€)</th>
-              <th className="p-3">Note</th>
-              <th className="p-3">Azioni</th>
-            </tr>
-          </thead>
-          <tbody>
-            {invoicesList.map((invoiceItem) => (
-              <tr key={invoiceItem.id} className="border-b hover:bg-gray-50">
-                <td className="p-3 font-semibold">{invoiceItem.invoicenumber}</td>
-                <td className="p-3">{invoiceItem.issuedate}</td>
-                <td className="p-3">{invoiceItem.clients?.name || 'Cliente sconosciuto'}</td>
-                <td className="p-3">€ {Number(invoiceItem.taxableamount).toFixed(2)}</td>
-                <td className="p-3 text-gray-600">{invoiceItem.note}</td>
-                <td className="p-3">
-                  <button 
-                    onClick={() => openEditModal(invoiceItem)}
-                    className="bg-yellow-500 text-white px-3 py-1 rounded text-sm hover:bg-yellow-600"
-                  >
-                    Modifica
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {invoicesList.length === 0 && (
-              <tr>
-                <td colSpan="6" className="p-4 text-center text-gray-500">Nessuna fattura trovata.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pannello Modale Inserimento / Modifica */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-lg">
-            <h2 className="text-xl font-bold mb-4">
-              {isEditMode ? 'Modifica Fattura' : 'Inserisci Nuova Fattura'}
-            </h2>
-
-            <form onSubmit={handleSaveInvoice} className="flex flex-col gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Cliente</label>
-                <select 
-                  className="border p-2 rounded w-full"
-                  value={selectedClientId}
-                  onChange={(e) => setSelectedClientId(e.target.value)}
-                  required
-                >
-                  <option value="">Seleziona un cliente...</option>
-                  {clientsList.map((clientItem) => (
-                    <option key={clientItem.id} value={clientItem.id}>
-                      {clientItem.name}
-                    </option>
+          {/* Tabella Fatture */}
+          <div className="bg-slate-800 rounded-2xl border border-slate-700 shadow-xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-950/50 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
+                    <th className="py-4 px-6">N° Fattura</th>
+                    <th className="py-4 px-6">Data Emissione</th>
+                    <th className="py-4 px-6">Cliente</th>
+                    <th className="py-4 px-6">Imponibile</th>
+                    <th className="py-4 px-6">Note</th>
+                    <th className="py-4 px-6 text-right">Azioni</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-700/50 text-sm">
+                  {invoicesList.map((invoiceItem) => (
+                    <tr key={invoiceItem.id} className="hover:bg-slate-700/30 transition-colors">
+                      <td className="py-4 px-6 font-bold text-indigo-400">
+                        #{invoiceItem.invoicenumber}
+                      </td>
+                      <td className="py-4 px-6 text-slate-300">
+                        {invoiceItem.issuedate}
+                      </td>
+                      <td className="py-4 px-6 font-medium text-white">
+                        {invoiceItem.clients?.name || 'Cliente non specificato'}
+                      </td>
+                      <td className="py-4 px-6 font-semibold text-emerald-400">
+                        € {Number(invoiceItem.taxableamount).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-4 px-6 text-slate-400 max-w-xs truncate">
+                        {invoiceItem.note || '-'}
+                      </td>
+                      <td className="py-4 px-6 text-right">
+                        <button 
+                          onClick={() => openEditModal(invoiceItem)}
+                          className="bg-slate-700 hover:bg-amber-600/80 text-amber-300 hover:text-white px-3.5 py-1.5 rounded-lg font-medium text-xs border border-amber-500/30 transition-all duration-150"
+                        >
+                          Modifica
+                        </button>
+                      </td>
+                    </tr>
                   ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Numero Fattura</label>
-                <input 
-                  type="number" 
-                  className="border p-2 rounded w-full"
-                  value={invoiceNumber}
-                  onChange={(e) => setInvoiceNumber(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Imponibile (€)</label>
-                <input 
-                  type="number" 
-                  step="0.01" 
-                  className="border p-2 rounded w-full"
-                  value={taxableAmount}
-                  onChange={(e) => setTaxableAmount(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Data Emissione</label>
-                <input 
-                  type="date" 
-                  className="border p-2 rounded w-full"
-                  value={invoiceDate}
-                  onChange={(e) => setInvoiceDate(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Note</label>
-                <textarea 
-                  className="border p-2 rounded w-full"
-                  value={invoiceNotes}
-                  onChange={(e) => setInvoiceNotes(e.target.value)}
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 mt-4">
-                <button 
-                  type="button" 
-                  onClick={() => setIsModalOpen(false)}
-                  className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
-                >
-                  Annulla
-                </button>
-                <button 
-                  type="submit" 
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                >
-                  Salva
-                </button>
-              </div>
-            </form>
+                  {invoicesList.length === 0 && (
+                    <tr>
+                      <td colSpan="6" className="py-12 text-center text-slate-500 font-medium">
+                        Nessuna fattura trovata con i filtri selezionati.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
+
         </div>
-      )}
-    </div>
+
+        {/* Modal Modifica/Inserimento */}
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-6">
+              <div className="flex justify-between items-center border-b border-slate-700 pb-4">
+                <h2 className="text-xl font-bold text-white">
+                  {isEditMode ? 'Modifica Fattura' : 'Nuova Fattura'}
+                </h2>
+                <button 
+                  onClick={() => setIsModalOpen(false)} 
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveInvoice} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Cliente *</label>
+                  <select 
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                    value={selectedClientId}
+                    onChange={(e) => setSelectedClientId(e.target.value)}
+                    required
+                  >
+                    <option value="">Seleziona un cliente...</option>
+                    {clientsList.map((clientItem) => (
+                      <option key={clientItem.id} value={clientItem.id}>
+                        {clientItem.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">N° Fattura *</label>
+                    <input 
+                      type="number" 
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                      value={invoiceNumber}
+                      onChange={(e) => setInvoiceNumber(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Data Emissione *</label>
+                    <input 
+                      type="date" 
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                      value={invoiceDate}
+                      onChange={(e) => setInvoiceDate(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Imponibile (€) *</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                    value={taxableAmount}
+                    onChange={(e) => setTaxableAmount(e.target.value)}
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Note</label>
+                  <textarea 
+                    rows="3"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                    value={invoiceNotes}
+                    onChange={(e) => setInvoiceNotes(e.target.value)}
+                    placeholder="Note o descrizione facoltativa..."
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-700 font-medium transition-colors"
+                  >
+                    Annulla
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-600/30 transition-all"
+                  >
+                    Salva Fattura
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   )
 }
