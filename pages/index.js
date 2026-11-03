@@ -184,6 +184,9 @@ export default function InvoiceDashboard() {
   const { paidByYear, unpaidByYear } = calculateProspectSummary()
   const allProspectYears = Array.from(new Set([...Object.keys(paidByYear), ...Object.keys(unpaidByYear)])).sort((a, b) => Number(b) - Number(a))
 
+  // Nome del cliente attualmente selezionato nel prospetto
+  const currentSelectedClientName = clientsList.find(c => c.id === prospectClientId)?.name || ''
+
   // Fatture filtrate per anno e per stato nel prospetto
   const filteredProspectInvoices = prospectInvoices.filter(item => {
     const matchesYear = !prospectFilterYear || (item.issuedate && item.issuedate.substring(0, 4) === prospectFilterYear)
@@ -299,11 +302,14 @@ export default function InvoiceDashboard() {
             margin: 10mm;
           }
           @media print {
-            body { background: white !important; color: black !important; }
+            body { background: #0f172a !important; color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .no-print { display: none !important; }
-            .print-container { background: white !important; border: none !important; box-shadow: none !important; padding: 0 !important; max-width: 100% !important; }
+            .print-container { background: #1e293b !important; border: 1px solid #334155 !important; box-shadow: none !important; padding: 20px !important; max-width: 100% !important; width: 100% !important; margin: 0 !important; }
+            .fixed { position: static !important; background: none !important; }
+            .backdrop-blur-md { backdrop-filter: none !important; }
             table { width: 100% !important; border-collapse: collapse !important; page-break-inside: avoid; }
-            th, td { border: 1px solid #cbd5e1 !important; color: black !important; padding: 6px !important; }
+            th, td { color: #f8fafc !important; }
+            .print-header-name { display: block !important; }
           }
         `}} />
       </Head>
@@ -554,6 +560,11 @@ export default function InvoiceDashboard() {
               {prospectClientId ? (
                 <div className="space-y-8">
                   
+                  {/* Nome del Cliente Stampabile */}
+                  <div className="hidden print-header-name pb-3 border-b border-slate-700 mb-4">
+                    <h2 className="text-xl font-extrabold text-white">Cliente: {currentSelectedClientName}</h2>
+                  </div>
+
                   {/* Sezione Tabelle di Riepilogo per Anno (Pagate e Da Pagare con IVA e Incasso) */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     
