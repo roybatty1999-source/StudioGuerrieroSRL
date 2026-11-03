@@ -252,21 +252,7 @@ export default function InvoiceDashboard() {
   // Nome del cliente attualmente selezionato nel prospetto
   const currentSelectedClientName = clientsList.find(c => c.id === prospectClientId)?.name || ''
 
-  // Fatture filtrate per anno e per stato nel prospetto (a schermo)
-  const filteredProspectInvoices = prospectInvoices.filter(item => {
-    const matchesYear = !prospectFilterYear || (item.issuedate && item.issuedate.substring(0, 4) === prospectFilterYear)
-    
-    let matchesStatus = true
-    if (prospectFilterStatus === 'unpaid') {
-      matchesStatus = !item.paymentdate
-    } else if (prospectFilterStatus === 'paid') {
-      matchesStatus = !!item.paymentdate
-    }
-
-    return matchesYear && matchesStatus
-  })
-
-  // Fatture non pagate specifiche per la stampa pulita
+  // Fatture non pagate specifiche per la stampa pulita del cliente selezionato
   const unpaidProspectInvoices = prospectInvoices.filter(item => !item.paymentdate)
 
   async function openInsertModal() {
@@ -355,15 +341,12 @@ export default function InvoiceDashboard() {
             margin: 15mm;
           }
           @media print {
-            /* Nasconde totalmente l'intera webapp */
             body * {
               visibility: hidden !important;
             }
-            /* Rende visibile solo il contenitore del prospetto e i suoi figli */
             .printable-prospect-area, .printable-prospect-area * {
               visibility: visible !important;
             }
-            /* Posiziona l'area di stampa in alto a sinistra senza sfondi o bordi scuri */
             .printable-prospect-area {
               position: absolute !important;
               left: 0 !important;
@@ -378,7 +361,6 @@ export default function InvoiceDashboard() {
             }
             .no-print { display: none !important; }
             
-            /* Stile minimale e pulito per la stampa */
             .print-header-name {
               display: block !important;
               text-align: center !important;
@@ -801,9 +783,16 @@ export default function InvoiceDashboard() {
                         </thead>
                         <tbody className="divide-y divide-slate-800">
                           {/* A schermo mostra il filtro scelto */}
-                          <div className="contents print:hidden">
-                            {filteredProspectInvoices.map((item) => (
-                              <tr key={item.id} className="hover:bg-slate-800/40">
+                          {prospectInvoices.map((item) => {
+                            const matchesYear = !prospectFilterYear || (item.issuedate && item.issuedate.substring(0, 4) === prospectFilterYear)
+                            let matchesStatus = true
+                            if (prospectFilterStatus === 'unpaid') matchesStatus = !item.paymentdate
+                            else if (prospectFilterStatus === 'paid') matchesStatus = !!item.paymentdate
+                            
+                            if (!matchesYear || !matchesStatus) return null
+
+                            return (
+                              <tr key={item.id} className="hover:bg-slate-800/40 print:hidden">
                                 <td className="py-3 px-4 text-slate-300">{formatDateToIT(item.issuedate)}</td>
                                 <td className="py-3 px-4 font-bold text-indigo-400">{item.invoicenumber}</td>
                                 <td className="py-3 px-4 text-slate-300">€ {Number(item.taxableamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
@@ -817,10 +806,10 @@ export default function InvoiceDashboard() {
                                   )}
                                 </td>
                               </tr>
-                            ))}
-                          </div>
+                            )
+                          })}
 
-                          {/* Sezione esclusiva per la stampa: solo non pagate */}
+                          {/* Sezione esclusiva per la stampa: solo le non pagate del cliente selezionato */}
                           {unpaidProspectInvoices.map((item) => (
                             <tr key={`print-unpaid-${item.id}`} className="hidden print:table-row">
                               <td className="py-2 px-3">{formatDateToIT(item.issuedate)}</td>
@@ -831,14 +820,9 @@ export default function InvoiceDashboard() {
                             </tr>
                           ))}
 
-                          {filteredProspectInvoices.length === 0 && (
-                            <tr className="print:hidden">
-                              <td colSpan="6" className="py-8 text-center text-slate-500">Nessuna fattura trovata con i filtri selezionati.</td>
-                            </tr>
-                          )}
-                          {unpaidProspectInvoices.length === 0 && (
-                            <tr className="hidden print:table-row">
-                              <td colSpan="5" className="py-4 text-center text-gray-500">Nessuna fattura non pagata.</td>
+                          {prospectInvoices.length === 0 && (
+                            <tr>
+                              <td colSpan="6" className="py-8 text-center text-slate-500">Nessuna fattura trovata per questo cliente.</td>
                             </tr>
                           )}
                         </tbody>
