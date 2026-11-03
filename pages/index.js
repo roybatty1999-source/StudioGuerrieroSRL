@@ -294,11 +294,15 @@ export default function InvoiceDashboard() {
         <title>Gestionale Fatture</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <style dangerouslySetInnerHTML={{__html: `
+          @page {
+            size: portrait;
+            margin: 10mm;
+          }
           @media print {
             body { background: white !important; color: black !important; }
             .no-print { display: none !important; }
             .print-container { background: white !important; border: none !important; box-shadow: none !important; padding: 0 !important; max-width: 100% !important; }
-            table { width: 100% !important; border-collapse: collapse !important; }
+            table { width: 100% !important; border-collapse: collapse !important; page-break-inside: avoid; }
             th, td { border: 1px solid #cbd5e1 !important; color: black !important; padding: 6px !important; }
           }
         `}} />
