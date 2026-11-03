@@ -6,6 +6,16 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const supabaseClient = createClient(supabaseUrl, supabaseKey)
 
+// Funzione di utilità per formattare la data da AAAA-MM-GG a GG/MM/AAAA
+function formatDateToIT(dateString) {
+  if (!dateString) return '-'
+  const parts = dateString.split('-')
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`
+  }
+  return dateString
+}
+
 export default function InvoiceDashboard() {
   const [invoicesList, setInvoicesList] = useState([])
   const [clientsList, setClientsList] = useState([])
@@ -74,6 +84,41 @@ export default function InvoiceDashboard() {
     }
   }, [taxableAmount])
 
+  // Aggiornamento automatico del formato del numero fattura in base alla data di emissione inserita (se in modalità inserimento)
+  useEffect(() => {
+    if (!isEditMode && invoiceDate) {
+      const yearStr = invoiceDate.substring(0, 4)
+      updateNextInvoiceNumber(yearStr)
+    }
+  }, [invoiceDate, isEditMode])
+
+  async function updateNextInvoiceNumber(yearStr) {
+    const startDate = `${yearStr}-01-01`
+    const endDate = `${yearStr}-12-31`
+
+    const { data, error } = await supabaseClient
+      .from('invoices')
+      .select('invoicenumber')
+      .gte('issuedate', startDate)
+      .lte('issuedate', endDate)
+
+    if (!error && data && data.length > 0) {
+      // Estrae la parte numerica prima dello slash per calcolare il progressivo corretto dell'anno
+      let maxNum = 0
+      data.forEach(item => {
+        const parts = String(item.invoicenumber).split('/')
+        const num = Number(parts[0])
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num
+        }
+      })
+      const nextNum = maxNum + 1
+      setInvoiceNumber(`${nextNum}/${yearStr}`)
+    } else {
+      setInvoiceNumber(`1/${yearStr}`)
+    }
+  }
+
   async function loadClients() {
     const { data, error } = await supabaseClient
       .from('clients')
@@ -123,8 +168,16 @@ export default function InvoiceDashboard() {
       query = query.gte('issuedate', startDate).lte('issuedate', endDate)
     }
 
-    const { data, error } = await query.order('invoicenumber', { ascending: false })
+    const { data, error } = await query.order('issuedate', { ascending: false })
     if (!error && data) {
+      // Ordinamento avanzato lato client per numero progressivo decrescente all'interno dello stesso anno
+      data.sort((a, b) => {
+        const partsA = String(a.invoicenumber).split('/')
+        const partsB = String(b.invoicenumber).split('/')
+        const numA = Number(partsA[0]) || 0
+        const numB = Number(partsB[0]) || 0
+        return numB - numA
+      })
       setInvoicesList(data)
     }
   }
@@ -224,26 +277,11 @@ export default function InvoiceDashboard() {
     setTotalAmount('')
     setPaymentDate('')
     setInvoiceNotes('')
-    setInvoiceDate(new Date().toISOString().split('T')[0])
-
-    const currentYearValue = filterYear || new Date().getFullYear().toString()
-    const startDate = `${currentYearValue}-01-01`
-    const endDate = `${currentYearValue}-12-31`
-
-    const { data, error } = await supabaseClient
-      .from('invoices')
-      .select('invoicenumber')
-      .gte('issuedate', startDate)
-      .lte('issuedate', endDate)
-      .order('invoicenumber', { ascending: false })
-      .limit(1)
-
-    if (!error && data && data.length > 0) {
-      const nextNumber = Number(data[0].invoicenumber) + 1
-      setInvoiceNumber(nextNumber.toString())
-    } else {
-      setInvoiceNumber('1')
-    }
+    const today = new Date().toISOString().split('T')[0]
+    setInvoiceDate(today)
+    
+    const currentYearValue = today.substring(0, 4)
+    await updateNextInvoiceNumber(currentYearValue)
 
     setIsModalOpen(true)
   }
@@ -252,7 +290,7 @@ export default function InvoiceDashboard() {
     setIsEditMode(true)
     setCurrentInvoiceId(invoiceItem.id)
     setSelectedClientId(invoiceItem.clientid)
-    setInvoiceNumber(invoiceItem.invoicenumber.toString())
+    setInvoiceNumber(invoiceItem.invoicenumber ? invoiceItem.invoicenumber.toString() : '')
     setTaxableAmount(invoiceItem.taxableamount != null ? invoiceItem.taxableamount.toString() : '')
     setVatAmount(invoiceItem.vatamount != null ? invoiceItem.vatamount.toString() : '')
     setTotalAmount(invoiceItem.totalamount != null ? invoiceItem.totalamount.toString() : '')
@@ -266,7 +304,7 @@ export default function InvoiceDashboard() {
     event.preventDefault()
 
     const invoicePayload = {
-      invoicenumber: Number(invoiceNumber),
+      invoicenumber: invoiceNumber, // Salvato come stringa (es. "596/2026")
       clientid: selectedClientId,
       issuedate: invoiceDate,
       paymentdate: paymentDate || null,
@@ -424,14 +462,14 @@ export default function InvoiceDashboard() {
                   {invoicesList.map((invoiceItem) => (
                     <tr key={invoiceItem.id} className="hover:bg-slate-700/30 transition-colors">
                       <td className="py-4 px-6 font-bold text-indigo-400">
-                        #{invoiceItem.invoicenumber}
+                        {invoiceItem.invoicenumber}
                       </td>
                       <td className="py-4 px-6 text-slate-300">
-                        {invoiceItem.issuedate}
+                        {formatDateToIT(invoiceItem.issuedate)}
                       </td>
                       <td className="py-4 px-6 text-slate-300">
                         {invoiceItem.paymentdate ? (
-                          <span className="text-emerald-400 font-medium">{invoiceItem.paymentdate}</span>
+                          <span className="text-emerald-400 font-medium">{formatDateToIT(invoiceItem.paymentdate)}</span>
                         ) : (
                           <span className="text-slate-500 italic">Non pagata</span>
                         )}
@@ -700,14 +738,14 @@ export default function InvoiceDashboard() {
                         <tbody className="divide-y divide-slate-800">
                           {filteredProspectInvoices.map((item) => (
                             <tr key={item.id} className="hover:bg-slate-800/40">
-                              <td className="py-3 px-4 text-slate-300">{item.issuedate}</td>
-                              <td className="py-3 px-4 font-bold text-indigo-400">#{item.invoicenumber}</td>
+                              <td className="py-3 px-4 text-slate-300">{formatDateToIT(item.issuedate)}</td>
+                              <td className="py-3 px-4 font-bold text-indigo-400">{item.invoicenumber}</td>
                               <td className="py-3 px-4 text-slate-300">€ {Number(item.taxableamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                               <td className="py-3 px-4 text-slate-300">€ {Number(item.vatamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                               <td className="py-3 px-4 font-semibold text-emerald-400">€ {Number(item.totalamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                               <td className="py-3 px-4">
                                 {item.paymentdate ? (
-                                  <span className="text-emerald-400 font-medium">{item.paymentdate}</span>
+                                  <span className="text-emerald-400 font-medium">{formatDateToIT(item.paymentdate)}</span>
                                 ) : (
                                   <span className="text-amber-500 italic">Da pagare</span>
                                 )}
@@ -771,12 +809,12 @@ export default function InvoiceDashboard() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">N° Fattura *</label>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">N° Fattura (Auto) *</label>
                     <input 
-                      type="number" 
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                      type="text" 
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-300 cursor-not-allowed outline-none font-bold text-indigo-400"
                       value={invoiceNumber}
-                      onChange={(e) => setInvoiceNumber(e.target.value)}
+                      readOnly
                       required
                     />
                   </div>
