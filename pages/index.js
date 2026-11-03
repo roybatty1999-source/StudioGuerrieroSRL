@@ -82,21 +82,24 @@ export default function InvoiceDashboard() {
     loadInvoices()
   }, [filterClient, filterYear])
 
+  // Gestione sicura del caricamento e renderizzazione del grafico nella modale Gestione
   useEffect(() => {
     if (isManagementOpen) {
       loadAllInvoicesForManagement().then(() => {
-        if (!window.Chart) {
-          const script = document.createElement('script')
-          script.src = 'https://cdn.jsdelivr.net/npm/chart.js'
-          script.async = true
-          script.onload = () => renderManagementChart()
-          document.body.appendChild(script)
-        } else {
-          renderManagementChart()
-        }
+        const timer = setTimeout(() => {
+          if (!window.Chart) {
+            const script = document.createElement('script')
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js'
+            script.async = true
+            script.onload = () => renderManagementChart()
+            document.body.appendChild(script)
+          } else {
+            renderManagementChart()
+          }
+        }, 50)
+        return () => clearTimeout(timer)
       })
-    }
-    return () => {
+    } else {
       if (chartInstanceRef.current) {
         chartInstanceRef.current.destroy()
         chartInstanceRef.current = null
@@ -106,7 +109,10 @@ export default function InvoiceDashboard() {
 
   useEffect(() => {
     if (isManagementOpen) {
-      renderManagementChart()
+      const timer = setTimeout(() => {
+        renderManagementChart()
+      }, 50)
+      return () => clearTimeout(timer)
     }
   }, [allInvoicesList, isManagementOpen])
 
@@ -132,9 +138,10 @@ export default function InvoiceDashboard() {
   }
 
   function renderManagementChart() {
-    if (!chartRef.current) return
+    if (!chartRef.current || !window.Chart) return
     if (chartInstanceRef.current) {
       chartInstanceRef.current.destroy()
+      chartInstanceRef.current = null
     }
 
     const { generalByYear, allGeneralYears } = calculateGeneralManagementSummary()
@@ -142,6 +149,8 @@ export default function InvoiceDashboard() {
     const taxableData = sortedYears.map(year => generalByYear[year]?.taxable || 0)
 
     const ctx = chartRef.current.getContext('2d')
+    if (!ctx) return
+
     chartInstanceRef.current = new window.Chart(ctx, {
       type: 'line',
       data: {
@@ -656,10 +665,8 @@ export default function InvoiceDashboard() {
             }
             .no-print { display: none !important; }
             
-            /* Nascondiamo selettori, filtri e la tabella di elenco tutte-le-fatture in stampa */
             .print-hide { display: none !important; }
 
-            /* Mostriamo e formattiamo solo le tabelle di riepilogo (Pagate, Non Pagate) e l'elenco delle non pagate */
             .print-client-title {
               text-align: center !important;
               font-size: 16px !important;
