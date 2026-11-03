@@ -18,6 +18,7 @@ function formatDateToIT(dateString) {
 
 export default function InvoiceDashboard() {
   const [invoicesList, setInvoicesList] = useState([])
+  const [allInvoicesList, setAllInvoicesList] = useState([])
   const [clientsList, setClientsList] = useState([])
   const [availableYears, setAvailableYears] = useState([])
   
@@ -74,11 +75,40 @@ export default function InvoiceDashboard() {
   useEffect(() => {
     loadClients()
     loadYears()
+    loadAllInvoicesForManagement()
   }, [])
 
   useEffect(() => {
     loadInvoices()
   }, [filterClient, filterYear])
+
+  useEffect(() => {
+    if (isManagementOpen) {
+      loadAllInvoicesForManagement().then(() => {
+        if (!window.Chart) {
+          const script = document.createElement('script')
+          script.src = 'https://cdn.jsdelivr.net/npm/chart.js'
+          script.async = true
+          script.onload = () => renderManagementChart()
+          document.body.appendChild(script)
+        } else {
+          renderManagementChart()
+        }
+      })
+    }
+    return () => {
+      if (chartInstanceRef.current) {
+        chartInstanceRef.current.destroy()
+        chartInstanceRef.current = null
+      }
+    }
+  }, [isManagementOpen])
+
+  useEffect(() => {
+    if (isManagementOpen) {
+      renderManagementChart()
+    }
+  }, [allInvoicesList, isManagementOpen])
 
   useEffect(() => {
     if (isProspectOpen && prospectClientId) {
@@ -90,27 +120,16 @@ export default function InvoiceDashboard() {
     }
   }, [isProspectOpen, prospectClientId])
 
-  // Gestione rendering del grafico a linee nella modale di Gestione
-  useEffect(() => {
-    if (isManagementOpen) {
-      // Carica Chart.js da CDN se non presente
-      if (!window.Chart) {
-        const script = document.createElement('script')
-        script.src = 'https://cdn.jsdelivr.net/npm/chart.js'
-        script.async = true
-        script.onload = () => renderManagementChart()
-        document.body.appendChild(script)
-      } else {
-        renderManagementChart()
-      }
+  async function loadAllInvoicesForManagement() {
+    const { data, error } = await supabaseClient
+      .from('invoices')
+      .select('id, invoicenumber, clientid, issuedate, paymentdate, taxableamount, vatamount, totalamount, note')
+      .order('issuedate', { ascending: true })
+
+    if (!error && data) {
+      setAllInvoicesList(data)
     }
-    return () => {
-      if (chartInstanceRef.current) {
-        chartInstanceRef.current.destroy()
-        chartInstanceRef.current = null
-      }
-    }
-  }, [isManagementOpen, invoicesList])
+  }
 
   function renderManagementChart() {
     if (!chartRef.current) return
@@ -340,6 +359,7 @@ export default function InvoiceDashboard() {
           alert("Cliente eliminato con successo.")
           loadClients()
           loadInvoices()
+          loadAllInvoicesForManagement()
         }
         setIsSelectClientModalOpen(false)
       }
@@ -430,13 +450,14 @@ export default function InvoiceDashboard() {
           alert("Fattura eliminata con successo.")
           loadInvoices()
           loadYears()
+          loadAllInvoicesForManagement()
         }
         setIsSelectInvoiceModalOpen(false)
       }
     }
   }
 
-  // Calcoli per il prospetto generale (Gestione)
+  // Calcoli per il prospetto generale (Gestione) basato su TUTTI i dati del database
   function calculateGeneralManagementSummary() {
     const generalByYear = {}
     let totalCount = 0
@@ -444,7 +465,7 @@ export default function InvoiceDashboard() {
     let totalVat = 0
     let totalIncasso = 0
 
-    invoicesList.forEach(item => {
+    allInvoicesList.forEach(item => {
       if (!item.issuedate) return
       const year = item.issuedate.substring(0, 4)
       const tax = Number(item.taxableamount) || 0
@@ -600,6 +621,7 @@ export default function InvoiceDashboard() {
     setIsModalOpen(false)
     loadYears()
     loadInvoices()
+    loadAllInvoicesForManagement()
     if (isProspectOpen && prospectClientId) {
       loadProspectData(prospectClientId)
     }
@@ -634,6 +656,10 @@ export default function InvoiceDashboard() {
             }
             .no-print { display: none !important; }
             
+            /* Nascondiamo selettori, filtri e la tabella di elenco tutte-le-fatture in stampa */
+            .print-hide { display: none !important; }
+
+            /* Mostriamo e formattiamo solo le tabelle di riepilogo (Pagate, Non Pagate) e l'elenco delle non pagate */
             .print-client-title {
               text-align: center !important;
               font-size: 16px !important;
@@ -866,7 +892,7 @@ export default function InvoiceDashboard() {
               <div className="flex justify-between items-center border-b border-slate-700 pb-4">
                 <div>
                   <h2 className="text-2xl font-bold text-white">Prospetto Generale di Gestione</h2>
-                  <p className="text-slate-400 text-sm mt-1">Riepilogo finanziario complessivo di tutte le fatture suddiviso per anno</p>
+                  <p className="text-slate-400 text-sm mt-1">Riepilogo finanziario complessivo di tutte le fatture nel database suddiviso per anno</p>
                 </div>
                 <button 
                   onClick={() => setIsManagementOpen(false)} 
@@ -1224,7 +1250,7 @@ export default function InvoiceDashboard() {
 
                   </div>
 
-                  {/* Sezione Filtri Anno e Stato per l'Elenco Fatture del Prospetto */}
+                  {/* Sezione Filtri Anno e Stato per l'Elenco Fatture del Prospetto (Nascosto in stampa) */}
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 p-4 rounded-xl border border-slate-700 no-print">
                     <h3 className="text-white font-bold text-sm">Elenco Fatture del Cliente</h3>
                     <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
@@ -1259,9 +1285,9 @@ export default function InvoiceDashboard() {
                     </div>
                   </div>
 
-                  {/* Tabella Dettaglio Fatture del Cliente */}
-                  <div className="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden">
-                    <div className="p-3 bg-slate-950 font-bold text-xs uppercase tracking-wider text-slate-300 hidden print:block print-sub-title">
+                  {/* Tabella Dettaglio Fatture INTERATTIVA a schermo (Filtri applicati dall'utente) */}
+                  <div className="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden no-print">
+                    <div className="p-3 bg-slate-950 font-bold text-xs uppercase tracking-wider text-slate-300 hidden print:block">
                       ELENCO FATTURE DEL CLIENTE
                     </div>
                     <div className="overflow-x-auto max-h-64 overflow-y-auto">
@@ -1305,9 +1331,45 @@ export default function InvoiceDashboard() {
                               </tr>
                             )
                           })}
-                          {prospectInvoices.length === 0 && (
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Tabella Dettaglio Fatture ESCLUSIVA per la STAMPA (Mostra SEMPRE e SOLO le NON PAGATE) */}
+                  <div className="hidden print:block bg-white rounded-xl overflow-hidden mt-4">
+                    <div className="print-sub-title">
+                      ELENCO FATTURE NON PAGATE
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-800 text-black">
+                            <th className="py-2 px-3">Data Emissione</th>
+                            <th className="py-2 px-3">N° Fattura</th>
+                            <th className="py-2 px-3 text-right">Imponibile</th>
+                            <th className="py-2 px-3 text-right">IVA</th>
+                            <th className="py-2 px-3 text-right">Incasso</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-300">
+                          {prospectInvoices.filter(item => !item.paymentdate).map((item) => {
+                            const yearFromDate = item.issuedate ? item.issuedate.substring(0, 4) : ''
+                            const displayInvoiceNum = item.invoicenumber && yearFromDate ? `${item.invoicenumber}/${yearFromDate}` : item.invoicenumber
+
+                            return (
+                              <tr key={`print-unpaid-${item.id}`}>
+                                <td className="py-2 px-3">{formatDateToIT(item.issuedate)}</td>
+                                <td className="py-2 px-3 font-bold">{displayInvoiceNum}</td>
+                                <td className="py-2 px-3 text-right">€ {Number(item.taxableamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="py-2 px-3 text-right">€ {Number(item.vatamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="py-2 px-3 text-right font-bold">€ {Number(item.totalamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              </tr>
+                            )
+                          })}
+                          {prospectInvoices.filter(item => !item.paymentdate).length === 0 && (
                             <tr>
-                              <td colSpan="6" className="py-8 text-center text-slate-500">Nessuna fattura trovata per questo cliente.</td>
+                              <td colSpan="5" className="py-4 text-center text-slate-500">Nessuna fattura non pagata presente per questo cliente.</td>
                             </tr>
                           )}
                         </tbody>
