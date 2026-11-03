@@ -39,7 +39,7 @@ export default function InvoiceDashboard() {
 
   // Campi del form inserimento/modifica fattura
   const [selectedClientId, setSelectedClientId] = useState('')
-  const [invoiceNumber, setInvoiceNumber] = useState('') // Memorizza il numero progressivo puro (es. "596")
+  const [invoiceNumber, setInvoiceNumber] = useState('')
   const [taxableAmount, setTaxableAmount] = useState('')
   const [vatAmount, setVatAmount] = useState('')
   const [totalAmount, setTotalAmount] = useState('')
@@ -113,7 +113,6 @@ export default function InvoiceDashboard() {
       const nextNum = maxNum + 1
       setInvoiceNumber(nextNum.toString())
     } else {
-      // Se non ci sono fatture per quell'anno, il contatore riparte da 1
       setInvoiceNumber('1')
     }
   }
@@ -169,7 +168,6 @@ export default function InvoiceDashboard() {
 
     const { data, error } = await query.order('issuedate', { ascending: false })
     if (!error && data) {
-      // Ordinamento discendente per numero progressivo all'interno dei dati caricati
       data.sort((a, b) => {
         const numA = Number(a.invoicenumber) || 0
         const numB = Number(b.invoicenumber) || 0
@@ -290,7 +288,7 @@ export default function InvoiceDashboard() {
     event.preventDefault()
 
     const invoicePayload = {
-      invoicenumber: invoiceNumber ? Number(invoiceNumber) : null, // Salva solo il numero puro nel DB
+      invoicenumber: invoiceNumber ? Number(invoiceNumber) : null,
       clientid: selectedClientId,
       issuedate: invoiceDate,
       paymentdate: paymentDate || null,
@@ -335,46 +333,41 @@ export default function InvoiceDashboard() {
         <title>Gestionale Fatture</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <style dangerouslySetInnerHTML={{__html: `
-          @page {
-            size: portrait;
-            margin: 15mm;
-          }
           @media print {
-            body * {
-              visibility: hidden !important;
+            body {
+              background: white !important;
+              color: black !important;
             }
-            .printable-prospect-area, .printable-prospect-area * {
-              visibility: visible !important;
+            /* Nasconde tutto tranne l'area di stampa dedicata */
+            body > * {
+              display: none !important;
             }
-            .printable-prospect-area {
+            .printable-sheet-only {
+              display: block !important;
               position: absolute !important;
               left: 0 !important;
               top: 0 !important;
               width: 100% !important;
+              margin: 0 !important;
+              padding: 10mm !important;
               background: white !important;
               color: black !important;
-              padding: 0 !important;
-              margin: 0 !important;
-              box-shadow: none !important;
-              border: none !important;
+              z-index: 999999 !important;
             }
             .no-print { display: none !important; }
             
-            .print-header-name {
-              display: block !important;
+            .print-client-title {
               text-align: center !important;
               font-size: 20px !important;
               font-weight: bold !important;
-              margin-bottom: 25px !important;
-              color: black !important;
-              text-transform: uppercase;
+              text-transform: uppercase !important;
+              margin-bottom: 20px !important;
             }
-            .print-section-title {
+            .print-sub-title {
               font-size: 13px !important;
               font-weight: bold !important;
-              margin-top: 20px !important;
-              margin-bottom: 6px !important;
-              color: black !important;
+              margin-top: 15px !important;
+              margin-bottom: 5px !important;
             }
             table {
               width: 100% !important;
@@ -383,10 +376,10 @@ export default function InvoiceDashboard() {
               page-break-inside: avoid;
             }
             th, td {
-              border: 1px solid #334155 !important;
-              color: black !important;
+              border: 1px solid #475569 !important;
               padding: 5px 8px !important;
               font-size: 11px !important;
+              color: black !important;
               background: white !important;
             }
             th {
@@ -396,10 +389,119 @@ export default function InvoiceDashboard() {
             }
             .text-right { text-align: right !important; }
           }
+          .printable-sheet-only {
+            display: none;
+          }
         `}} />
       </Head>
       
-      <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-4 sm:p-8">
+      {/* AREA DEDICATA ESCLUSIVAMENTE ALLA STAMPA PULITA */}
+      <div className="printable-sheet-only">
+        {prospectClientId && (
+          <>
+            <div className="print-client-title">
+              {currentSelectedClientName}
+            </div>
+
+            <div style={{ display: 'flex', gap: '15px', marginBottom: '15px' }}>
+              {/* Tabella Pagate per Stampa */}
+              <div style={{ flex: 1 }}>
+                <div className="print-sub-title">PAGATE (PER ANNO DI EMISSIONE)</div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Anno</th>
+                      <th className="text-right">Imponibile</th>
+                      <th className="text-right">IVA</th>
+                      <th className="text-right">Incasso</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allProspectYears.map(year => {
+                      const data = paidByYear[year] || { taxable: 0, vat: 0, total: 0 }
+                      return (
+                        <tr key={`print-paid-${year}`}>
+                          <td>{year}</td>
+                          <td className="text-right">€ {data.taxable.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="text-right">€ {data.vat.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="text-right" style={{ fontWeight: 'bold' }}>€ {data.total.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Tabella Non Pagate per Stampa */}
+              <div style={{ flex: 1 }}>
+                <div className="print-sub-title">NON PAGATE (PER ANNO DI EMISSIONE)</div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Anno</th>
+                      <th className="text-right">Imponibile</th>
+                      <th className="text-right">IVA</th>
+                      <th className="text-right">Incasso</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allProspectYears.map(year => {
+                      const data = unpaidByYear[year] || { taxable: 0, vat: 0, total: 0 }
+                      return (
+                        <tr key={`print-unpaid-sum-${year}`}>
+                          <td>{year}</td>
+                          <td className="text-right">€ {data.taxable.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="text-right">€ {data.vat.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="text-right" style={{ fontWeight: 'bold' }}>€ {data.total.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Elenco Fatture Non Pagate per Stampa */}
+            <div>
+              <div className="print-sub-title">ELENCO FATTURE NON PAGATE</div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Data Emissione</th>
+                    <th>N° Fattura</th>
+                    <th className="text-right">Imponibile</th>
+                    <th className="text-right">IVA</th>
+                    <th className="text-right">Incasso</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {unpaidProspectInvoices.map((item) => {
+                    const yearFromDate = item.issuedate ? item.issuedate.substring(0, 4) : ''
+                    const displayInvoiceNum = item.invoicenumber && yearFromDate ? `${item.invoicenumber}/${yearFromDate}` : item.invoicenumber
+                    return (
+                      <tr key={`print-row-${item.id}`}>
+                        <td>{formatDateToIT(item.issuedate)}</td>
+                        <td style={{ fontWeight: 'bold' }}>{displayInvoiceNum}</td>
+                        <td className="text-right">€ {Number(item.taxableamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="text-right">€ {Number(item.vatamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="text-right" style={{ fontWeight: 'bold' }}>€ {Number(item.totalamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      </tr>
+                    )
+                  })}
+                  {unpaidProspectInvoices.length === 0 && (
+                    <tr>
+                      <td colSpan="5" style={{ textAlign: 'center', padding: '10px' }}>Nessuna fattura non pagata.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* WEBAPP PRINCIPALE */}
+      <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-4 sm:p-8 no-print">
         <div className="max-w-7xl mx-auto space-y-6">
           
           {/* Header */}
@@ -601,7 +703,7 @@ export default function InvoiceDashboard() {
         {/* Modal Prospetto */}
         {isProspectOpen && (
           <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-6xl w-full shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto printable-prospect-area">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-6xl w-full shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center border-b border-slate-700 pb-4 no-print">
                 <div>
                   <h2 className="text-2xl font-bold text-white">Prospetto Finanziario Cliente</h2>
@@ -650,11 +752,6 @@ export default function InvoiceDashboard() {
               {prospectClientId ? (
                 <div className="space-y-6">
                   
-                  {/* Nome del Cliente Centrato in Stampata */}
-                  <div className="hidden print-header-name">
-                    {currentSelectedClientName}
-                  </div>
-
                   {/* Sezione Tabelle di Riepilogo per Anno (Pagate e Non Pagate) */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     
@@ -724,8 +821,8 @@ export default function InvoiceDashboard() {
 
                   </div>
 
-                  {/* Sezione Filtri Anno e Stato per l'Elenco Fatture del Prospetto (Visibile solo a schermo) */}
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 p-4 rounded-xl border border-slate-700 no-print">
+                  {/* Sezione Filtri Anno e Stato per l'Elenco Fatture del Prospetto */}
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 p-4 rounded-xl border border-slate-700">
                     <h3 className="text-white font-bold text-sm">Elenco Fatture del Cliente</h3>
                     <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                       <div className="flex items-center gap-2 flex-1 sm:flex-initial">
@@ -761,12 +858,9 @@ export default function InvoiceDashboard() {
 
                   {/* Tabella Dettaglio Fatture del Cliente */}
                   <div className="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden">
-                    <div className="p-3 bg-slate-950 font-bold text-xs uppercase tracking-wider text-slate-300 print-section-title">
-                      Elenco Fatture Non Pagate
-                    </div>
                     <div className="overflow-x-auto max-h-64 overflow-y-auto">
                       <table className="w-full text-left border-collapse text-xs">
-                        <thead className="sticky top-0 bg-slate-950 text-slate-400 uppercase tracking-wider no-print">
+                        <thead className="sticky top-0 bg-slate-950 text-slate-400 uppercase tracking-wider">
                           <tr>
                             <th className="py-3 px-4">Data Emissione</th>
                             <th className="py-3 px-4">N° Fattura</th>
@@ -776,17 +870,7 @@ export default function InvoiceDashboard() {
                             <th className="py-3 px-4">Stato</th>
                           </tr>
                         </thead>
-                        <thead className="hidden print:table-header-group">
-                          <tr>
-                            <th className="py-2 px-3">Data Emissione</th>
-                            <th className="py-2 px-3">N° Fattura</th>
-                            <th className="py-2 px-3 text-right">Imponibile</th>
-                            <th className="py-2 px-3 text-right">IVA</th>
-                            <th className="py-2 px-3 text-right">Incasso</th>
-                          </tr>
-                        </thead>
                         <tbody className="divide-y divide-slate-800">
-                          {/* A schermo mostra il filtro scelto */}
                           {prospectInvoices.map((item) => {
                             const matchesYear = !prospectFilterYear || (item.issuedate && item.issuedate.substring(0, 4) === prospectFilterYear)
                             let matchesStatus = true
@@ -799,7 +883,7 @@ export default function InvoiceDashboard() {
                             const displayInvoiceNum = item.invoicenumber && yearFromDate ? `${item.invoicenumber}/${yearFromDate}` : item.invoicenumber
 
                             return (
-                              <tr key={item.id} className="hover:bg-slate-800/40 print:hidden">
+                              <tr key={item.id} className="hover:bg-slate-800/40">
                                 <td className="py-3 px-4 text-slate-300">{formatDateToIT(item.issuedate)}</td>
                                 <td className="py-3 px-4 font-bold text-indigo-400">{displayInvoiceNum}</td>
                                 <td className="py-3 px-4 text-slate-300">€ {Number(item.taxableamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
@@ -815,23 +899,6 @@ export default function InvoiceDashboard() {
                               </tr>
                             )
                           })}
-
-                          {/* Sezione esclusiva per la stampa: solo le non pagate del cliente selezionato */}
-                          {unpaidProspectInvoices.map((item) => {
-                            const yearFromDate = item.issuedate ? item.issuedate.substring(0, 4) : ''
-                            const displayInvoiceNum = item.invoicenumber && yearFromDate ? `${item.invoicenumber}/${yearFromDate}` : item.invoicenumber
-
-                            return (
-                              <tr key={`print-unpaid-${item.id}`} className="hidden print:table-row">
-                                <td className="py-2 px-3">{formatDateToIT(item.issuedate)}</td>
-                                <td className="py-2 px-3 font-bold">{displayInvoiceNum}</td>
-                                <td className="py-2 px-3 text-right">€ {Number(item.taxableamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                <td className="py-2 px-3 text-right">€ {Number(item.vatamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                <td className="py-2 px-3 text-right font-bold">€ {Number(item.totalamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                              </tr>
-                            )
-                          })}
-
                           {prospectInvoices.length === 0 && (
                             <tr>
                               <td colSpan="6" className="py-8 text-center text-slate-500">Nessuna fattura trovata per questo cliente.</td>
