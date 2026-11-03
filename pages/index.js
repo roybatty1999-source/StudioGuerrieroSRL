@@ -39,7 +39,7 @@ export default function InvoiceDashboard() {
 
   // Campi del form inserimento/modifica fattura
   const [selectedClientId, setSelectedClientId] = useState('')
-  const [invoiceNumber, setInvoiceNumber] = useState('')
+  const [invoiceNumber, setInvoiceNumber] = useState('') // Memorizza il numero progressivo puro (es. "596")
   const [taxableAmount, setTaxableAmount] = useState('')
   const [vatAmount, setVatAmount] = useState('')
   const [totalAmount, setTotalAmount] = useState('')
@@ -84,7 +84,7 @@ export default function InvoiceDashboard() {
     }
   }, [taxableAmount])
 
-  // Aggiornamento automatico del formato del numero fattura in base alla data di emissione inserita (se in modalità inserimento)
+  // Calcolo automatico del prossimo numero progressivo per l'anno di emissione scelto (Azzeramento annuale)
   useEffect(() => {
     if (!isEditMode && invoiceDate) {
       const yearStr = invoiceDate.substring(0, 4)
@@ -105,16 +105,16 @@ export default function InvoiceDashboard() {
     if (!error && data && data.length > 0) {
       let maxNum = 0
       data.forEach(item => {
-        const parts = String(item.invoicenumber).split('/')
-        const num = Number(parts[0])
+        const num = Number(item.invoicenumber)
         if (!isNaN(num) && num > maxNum) {
           maxNum = num
         }
       })
       const nextNum = maxNum + 1
-      setInvoiceNumber(`${nextNum}/${yearStr}`)
+      setInvoiceNumber(nextNum.toString())
     } else {
-      setInvoiceNumber(`1/${yearStr}`)
+      // Se non ci sono fatture per quell'anno, il contatore riparte da 1
+      setInvoiceNumber('1')
     }
   }
 
@@ -169,11 +169,10 @@ export default function InvoiceDashboard() {
 
     const { data, error } = await query.order('issuedate', { ascending: false })
     if (!error && data) {
+      // Ordinamento discendente per numero progressivo all'interno dei dati caricati
       data.sort((a, b) => {
-        const partsA = String(a.invoicenumber).split('/')
-        const partsB = String(b.invoicenumber).split('/')
-        const numA = Number(partsA[0]) || 0
-        const numB = Number(partsB[0]) || 0
+        const numA = Number(a.invoicenumber) || 0
+        const numB = Number(b.invoicenumber) || 0
         return numB - numA
       })
       setInvoicesList(data)
@@ -277,7 +276,7 @@ export default function InvoiceDashboard() {
     setIsEditMode(true)
     setCurrentInvoiceId(invoiceItem.id)
     setSelectedClientId(invoiceItem.clientid)
-    setInvoiceNumber(invoiceItem.invoicenumber ? invoiceItem.invoicenumber.toString() : '')
+    setInvoiceNumber(invoiceItem.invoicenumber != null ? invoiceItem.invoicenumber.toString() : '')
     setTaxableAmount(invoiceItem.taxableamount != null ? invoiceItem.taxableamount.toString() : '')
     setVatAmount(invoiceItem.vatamount != null ? invoiceItem.vatamount.toString() : '')
     setTotalAmount(invoiceItem.totalamount != null ? invoiceItem.totalamount.toString() : '')
@@ -291,7 +290,7 @@ export default function InvoiceDashboard() {
     event.preventDefault()
 
     const invoicePayload = {
-      invoicenumber: invoiceNumber,
+      invoicenumber: invoiceNumber ? Number(invoiceNumber) : null, // Salva solo il numero puro nel DB
       clientid: selectedClientId,
       issuedate: invoiceDate,
       paymentdate: paymentDate || null,
@@ -493,46 +492,51 @@ export default function InvoiceDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-700/50 text-sm">
-                  {invoicesList.map((invoiceItem) => (
-                    <tr key={invoiceItem.id} className="hover:bg-slate-700/30 transition-colors">
-                      <td className="py-4 px-6 font-bold text-indigo-400">
-                        {invoiceItem.invoicenumber}
-                      </td>
-                      <td className="py-4 px-6 text-slate-300">
-                        {formatDateToIT(invoiceItem.issuedate)}
-                      </td>
-                      <td className="py-4 px-6 text-slate-300">
-                        {invoiceItem.paymentdate ? (
-                          <span className="text-emerald-400 font-medium">{formatDateToIT(invoiceItem.paymentdate)}</span>
-                        ) : (
-                          <span className="text-slate-500 italic">Non pagata</span>
-                        )}
-                      </td>
-                      <td className="py-4 px-6 font-medium text-white">
-                        {invoiceItem.clients?.name || 'Cliente non specificato'}
-                      </td>
-                      <td className="py-4 px-6 text-slate-300">
-                        {invoiceItem.taxableamount != null ? `€ ${Number(invoiceItem.taxableamount).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
-                      </td>
-                      <td className="py-4 px-6 text-slate-300">
-                        {invoiceItem.vatamount != null ? `€ ${Number(invoiceItem.vatamount).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
-                      </td>
-                      <td className="py-4 px-6 font-semibold text-emerald-400">
-                        {invoiceItem.totalamount != null ? `€ ${Number(invoiceItem.totalamount).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
-                      </td>
-                      <td className="py-4 px-6 text-slate-400 max-w-xs truncate">
-                        {invoiceItem.note || '-'}
-                      </td>
-                      <td className="py-4 px-6 text-right">
-                        <button 
-                          onClick={() => openEditModal(invoiceItem)}
-                          className="bg-slate-700 hover:bg-amber-600/80 text-amber-300 hover:text-white px-3.5 py-1.5 rounded-lg font-medium text-xs border border-amber-500/30 transition-all duration-150"
-                        >
-                          Modifica
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {invoicesList.map((invoiceItem) => {
+                    const yearFromDate = invoiceItem.issuedate ? invoiceItem.issuedate.substring(0, 4) : ''
+                    const displayInvoiceNum = invoiceItem.invoicenumber && yearFromDate ? `${invoiceItem.invoicenumber}/${yearFromDate}` : invoiceItem.invoicenumber
+
+                    return (
+                      <tr key={invoiceItem.id} className="hover:bg-slate-700/30 transition-colors">
+                        <td className="py-4 px-6 font-bold text-indigo-400">
+                          {displayInvoiceNum}
+                        </td>
+                        <td className="py-4 px-6 text-slate-300">
+                          {formatDateToIT(invoiceItem.issuedate)}
+                        </td>
+                        <td className="py-4 px-6 text-slate-300">
+                          {invoiceItem.paymentdate ? (
+                            <span className="text-emerald-400 font-medium">{formatDateToIT(invoiceItem.paymentdate)}</span>
+                          ) : (
+                            <span className="text-slate-500 italic">Non pagata</span>
+                          )}
+                        </td>
+                        <td className="py-4 px-6 font-medium text-white">
+                          {invoiceItem.clients?.name || 'Cliente non specificato'}
+                        </td>
+                        <td className="py-4 px-6 text-slate-300">
+                          {invoiceItem.taxableamount != null ? `€ ${Number(invoiceItem.taxableamount).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
+                        </td>
+                        <td className="py-4 px-6 text-slate-300">
+                          {invoiceItem.vatamount != null ? `€ ${Number(invoiceItem.vatamount).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
+                        </td>
+                        <td className="py-4 px-6 font-semibold text-emerald-400">
+                          {invoiceItem.totalamount != null ? `€ ${Number(invoiceItem.totalamount).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
+                        </td>
+                        <td className="py-4 px-6 text-slate-400 max-w-xs truncate">
+                          {invoiceItem.note || '-'}
+                        </td>
+                        <td className="py-4 px-6 text-right">
+                          <button 
+                            onClick={() => openEditModal(invoiceItem)}
+                            className="bg-slate-700 hover:bg-amber-600/80 text-amber-300 hover:text-white px-3.5 py-1.5 rounded-lg font-medium text-xs border border-amber-500/30 transition-all duration-150"
+                          >
+                            Modifica
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
                   {invoicesList.length === 0 && (
                     <tr>
                       <td colSpan="9" className="py-12 text-center text-slate-500 font-medium">
@@ -791,10 +795,13 @@ export default function InvoiceDashboard() {
                             
                             if (!matchesYear || !matchesStatus) return null
 
+                            const yearFromDate = item.issuedate ? item.issuedate.substring(0, 4) : ''
+                            const displayInvoiceNum = item.invoicenumber && yearFromDate ? `${item.invoicenumber}/${yearFromDate}` : item.invoicenumber
+
                             return (
                               <tr key={item.id} className="hover:bg-slate-800/40 print:hidden">
                                 <td className="py-3 px-4 text-slate-300">{formatDateToIT(item.issuedate)}</td>
-                                <td className="py-3 px-4 font-bold text-indigo-400">{item.invoicenumber}</td>
+                                <td className="py-3 px-4 font-bold text-indigo-400">{displayInvoiceNum}</td>
                                 <td className="py-3 px-4 text-slate-300">€ {Number(item.taxableamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                 <td className="py-3 px-4 text-slate-300">€ {Number(item.vatamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                 <td className="py-3 px-4 font-semibold text-emerald-400">€ {Number(item.totalamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
@@ -810,15 +817,20 @@ export default function InvoiceDashboard() {
                           })}
 
                           {/* Sezione esclusiva per la stampa: solo le non pagate del cliente selezionato */}
-                          {unpaidProspectInvoices.map((item) => (
-                            <tr key={`print-unpaid-${item.id}`} className="hidden print:table-row">
-                              <td className="py-2 px-3">{formatDateToIT(item.issuedate)}</td>
-                              <td className="py-2 px-3 font-bold">{item.invoicenumber}</td>
-                              <td className="py-2 px-3 text-right">€ {Number(item.taxableamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                              <td className="py-2 px-3 text-right">€ {Number(item.vatamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                              <td className="py-2 px-3 text-right font-bold">€ {Number(item.totalamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            </tr>
-                          ))}
+                          {unpaidProspectInvoices.map((item) => {
+                            const yearFromDate = item.issuedate ? item.issuedate.substring(0, 4) : ''
+                            const displayInvoiceNum = item.invoicenumber && yearFromDate ? `${item.invoicenumber}/${yearFromDate}` : item.invoicenumber
+
+                            return (
+                              <tr key={`print-unpaid-${item.id}`} className="hidden print:table-row">
+                                <td className="py-2 px-3">{formatDateToIT(item.issuedate)}</td>
+                                <td className="py-2 px-3 font-bold">{displayInvoiceNum}</td>
+                                <td className="py-2 px-3 text-right">€ {Number(item.taxableamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="py-2 px-3 text-right">€ {Number(item.vatamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="py-2 px-3 text-right font-bold">€ {Number(item.totalamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              </tr>
+                            )
+                          })}
 
                           {prospectInvoices.length === 0 && (
                             <tr>
@@ -881,7 +893,7 @@ export default function InvoiceDashboard() {
                     <input 
                       type="text" 
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-300 cursor-not-allowed outline-none font-bold text-indigo-400"
-                      value={invoiceNumber}
+                      value={invoiceDate && invoiceNumber ? `${invoiceNumber}/${invoiceDate.substring(0, 4)}` : invoiceNumber}
                       readOnly
                       required
                     />
