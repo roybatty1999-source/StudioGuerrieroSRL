@@ -333,52 +333,53 @@ export default function InvoiceDashboard() {
         <title>Gestionale Fatture</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <style dangerouslySetInnerHTML={{__html: `
+          @page {
+            size: portrait;
+            margin: 10mm;
+          }
           @media print {
             body {
               background: white !important;
               color: black !important;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
             }
-            /* Nasconde tutto tranne l'area di stampa dedicata */
             body > * {
               display: none !important;
             }
             .printable-sheet-only {
               display: block !important;
-              position: absolute !important;
-              left: 0 !important;
-              top: 0 !important;
               width: 100% !important;
               margin: 0 !important;
-              padding: 10mm !important;
+              padding: 0 !important;
               background: white !important;
               color: black !important;
-              z-index: 999999 !important;
             }
-            .no-print { display: none !important; }
-            
             .print-client-title {
               text-align: center !important;
-              font-size: 20px !important;
+              font-size: 18px !important;
               font-weight: bold !important;
               text-transform: uppercase !important;
-              margin-bottom: 20px !important;
+              margin-bottom: 15px !important;
+              color: black !important;
             }
             .print-sub-title {
-              font-size: 13px !important;
+              font-size: 12px !important;
               font-weight: bold !important;
-              margin-top: 15px !important;
-              margin-bottom: 5px !important;
+              margin-top: 12px !important;
+              margin-bottom: 4px !important;
+              color: black !important;
             }
             table {
               width: 100% !important;
               border-collapse: collapse !important;
-              margin-bottom: 15px !important;
+              margin-bottom: 10px !important;
               page-break-inside: avoid;
             }
             th, td {
-              border: 1px solid #475569 !important;
-              padding: 5px 8px !important;
-              font-size: 11px !important;
+              border: 1px solid #334155 !important;
+              padding: 4px 6px !important;
+              font-size: 10px !important;
               color: black !important;
               background: white !important;
             }
@@ -398,12 +399,12 @@ export default function InvoiceDashboard() {
       {/* AREA DEDICATA ESCLUSIVAMENTE ALLA STAMPA PULITA */}
       <div className="printable-sheet-only">
         {prospectClientId && (
-          <>
+          <div>
             <div className="print-client-title">
               {currentSelectedClientName}
             </div>
 
-            <div style={{ display: 'flex', gap: '15px', marginBottom: '15px' }}>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
               {/* Tabella Pagate per Stampa */}
               <div style={{ flex: 1 }}>
                 <div className="print-sub-title">PAGATE (PER ANNO DI EMISSIONE)</div>
@@ -496,7 +497,7 @@ export default function InvoiceDashboard() {
                 </tbody>
               </table>
             </div>
-          </>
+          </div>
         )}
       </div>
 
