@@ -9,6 +9,8 @@ const supabaseClient = createClient(supabaseUrl, supabaseKey)
 export default function InvoiceDashboard() {
   const [invoicesList, setInvoicesList] = useState([])
   const [clientsList, setClientsList] = useState([])
+  const [availableYears, setAvailableYears] = useState([])
+  
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
   const [currentInvoiceId, setCurrentInvoiceId] = useState(null)
@@ -27,6 +29,10 @@ export default function InvoiceDashboard() {
 
   useEffect(() => {
     loadClients()
+    loadYears()
+  }, [])
+
+  useEffect(() => {
     loadInvoices()
   }, [filterClient, filterYear])
 
@@ -37,6 +43,35 @@ export default function InvoiceDashboard() {
       .order('name', { ascending: true })
     if (!error && data) {
       setClientsList(data)
+    }
+  }
+
+  async function loadYears() {
+    const { data, error } = await supabaseClient
+      .from('invoices')
+      .select('issuedate')
+    
+    if (!error && data) {
+      const yearsSet = new Set()
+      data.forEach(item => {
+        if (item.issuedate) {
+          const yearValue = item.issuedate.split('-')[0]
+          yearsSet.add(yearValue)
+        }
+      })
+      const yearsArray = Array.from(yearsSet).sort((a, b) => b - a)
+      
+      // Se non ci sono anni, metti l'anno corrente come default
+      if (yearsArray.length === 0) {
+        yearsArray.push(new Date().getFullYear().toString())
+      }
+      
+      setAvailableYears(yearsArray)
+      
+      // Se l'anno selezionato attualmente non è nella lista, imposta il primo disponibile
+      if (!yearsArray.includes(filterYear) && yearsArray.length > 0) {
+        setFilterYear(yearsArray[0])
+      }
     }
   }
 
@@ -138,6 +173,7 @@ export default function InvoiceDashboard() {
     }
 
     setIsModalOpen(false)
+    loadYears()
     loadInvoices()
   }
 
@@ -188,13 +224,18 @@ export default function InvoiceDashboard() {
 
             <div className="w-full md:w-48">
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Anno di emissione</label>
-              <input 
-                type="text" 
+              <select 
                 className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                 value={filterYear}
                 onChange={(e) => setFilterYear(e.target.value)}
-                placeholder="AAAA"
-              />
+              >
+                <option value="">Tutti gli anni</option>
+                {availableYears.map((yearItem) => (
+                  <option key={yearItem} value={yearItem}>
+                    {yearItem}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
