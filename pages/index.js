@@ -26,9 +26,15 @@ export default function InvoiceDashboard() {
   const [isEditMode, setIsEditMode] = useState(false)
   const [currentInvoiceId, setCurrentInvoiceId] = useState(null)
   
-  // Stati Modale Aggiungi Cliente
+  // Stati Modale Aggiungi/Modifica Cliente
   const [isClientModalOpen, setIsClientModalOpen] = useState(false)
+  const [isClientEditMode, setIsClientEditMode] = useState(false)
+  const [selectedClientToEditId, setSelectedClientToEditId] = useState('')
   const [newClientName, setNewClientName] = useState('')
+
+  // Stati per i menu a tendina (Dropdown) della barra superiore
+  const [clientMenuOpen, setClientMenuOpen] = useState(false)
+  const [invoiceMenuOpen, setInvoiceMenuOpen] = useState(false)
 
   // Stati per la vista Prospetto
   const [isProspectOpen, setIsProspectOpen] = useState(false)
@@ -185,7 +191,6 @@ export default function InvoiceDashboard() {
       .order('issuedate', { ascending: true })
 
     if (!error && data) {
-      // Ordinamento rigoroso dal più vecchio al più nuovo: prima per data, poi per numero fattura crescente
       data.sort((a, b) => {
         const dateCompare = (a.issuedate || '').localeCompare(b.issuedate || '')
         if (dateCompare !== 0) return dateCompare
@@ -197,28 +202,139 @@ export default function InvoiceDashboard() {
     }
   }
 
-  // Salvataggio nuovo cliente
+  // Azioni Cliente: Aggiungi / Modifica / Cancella
+  function openAddClientModal() {
+    setIsClientEditMode(false)
+    setNewClientName('')
+    setSelectedClientToEditId('')
+    setIsClientModalOpen(true)
+    setClientMenuOpen(false)
+  }
+
+  function openEditClientModal() {
+    if (clientsList.length === 0) {
+      alert("Nessun cliente disponibile da modificare.")
+      return
+    }
+    const clientIdToEdit = prompt("Seleziona il nome o inserisci l'ID del cliente da modificare, oppure scegli dall'elenco:\n" + clientsList.map(c => `- ${c.name} (ID: ${c.id})`).join('\n'))
+    if (!clientIdToEdit) return
+    const found = clientsList.find(c => c.id === clientIdToEdit || c.name.toLowerCase() === clientIdToEdit.toLowerCase())
+    if (found) {
+      setIsClientEditMode(true)
+      setSelectedClientToEditId(found.id)
+      setNewClientName(found.name)
+      setIsClientModalOpen(true)
+    } else {
+      alert("Cliente non trovato.")
+    }
+    setClientMenuOpen(false)
+  }
+
+  async function handleDeleteClient() {
+    if (clientsList.length === 0) {
+      alert("Nessun cliente disponibile.")
+      return
+    }
+    const clientNameInput = prompt("Inserisci il nome esatto del cliente da cancellare (attenzione: verranno eliminate anche le relative fatture collegate):")
+    if (!clientNameInput) return
+    const found = clientsList.find(c => c.name.toLowerCase() === clientNameInput.trim().toLowerCase())
+    if (!found) {
+      alert("Cliente non trovato.")
+      return
+    }
+    if (confirm(`Sei sicuro di voler eliminare il cliente ${found.name} e tutte le sue fatture?`)) {
+      await supabaseClient.from('invoices').delete().eq('clientid', found.id)
+      const { error } = await supabaseClient.from('clients').delete().eq('id', found.id)
+      if (error) {
+        alert("Errore durante l'eliminazione: " + error.message)
+      } else {
+        alert("Cliente eliminato con successo.")
+        loadClients()
+        loadInvoices()
+      }
+    }
+    setClientMenuOpen(false)
+  }
+
   async function handleSaveClient(event) {
     event.preventDefault()
     if (!newClientName.trim()) return
 
-    const { data, error } = await supabaseClient
-      .from('clients')
-      .insert([{ name: newClientName.trim() }])
-      .select()
+    if (isClientEditMode && selectedClientToEditId) {
+      const { error } = await supabaseClient
+        .from('clients')
+        .update({ name: newClientName.trim() })
+        .eq('id', selectedClientToEditId)
 
-    if (error) {
-      alert('Errore durante l\'inserimento del cliente: ' + error.message)
-      return
+      if (error) {
+        alert('Errore durante l\'aggiornamento del cliente: ' + error.message)
+        return
+      }
+    } else {
+      const { data, error } = await supabaseClient
+        .from('clients')
+        .insert([{ name: newClientName.trim() }])
+        .select()
+
+      if (error) {
+        alert('Errore durante l\'inserimento del cliente: ' + error.message)
+        return
+      }
+      if (data && data.length > 0) {
+        setSelectedClientId(data[0].id)
+      }
     }
 
     setNewClientName('')
     setIsClientModalOpen(false)
     loadClients()
+  }
 
-    if (data && data.length > 0) {
-      setSelectedClientId(data[0].id)
+  // Azioni Fatture: Aggiungi / Modifica / Cancella
+  function handleAddInvoiceAction() {
+    openInsertModal()
+    setInvoiceMenuOpen(false)
+  }
+
+  function handleEditInvoiceAction() {
+    if (invoicesList.length === 0) {
+      alert("Nessuna fattura presente da modificare.")
+      return
     }
+    const invNum = prompt("Inserisci il numero della fattura da modificare (es. 596):")
+    if (!invNum) return
+    const found = invoicesList.find(i => String(i.invoicenumber) === invNum.trim())
+    if (found) {
+      openEditModal(found)
+    } else {
+      alert("Fattura non trovata.")
+    }
+    setInvoiceMenuOpen(false)
+  }
+
+  async function handleDeleteInvoiceAction() {
+    if (invoicesList.length === 0) {
+      alert("Nessuna fattura presente.")
+      return
+    }
+    const invNum = prompt("Inserisci il numero della fattura da cancellare:")
+    if (!invNum) return
+    const found = invoicesList.find(i => String(i.invoicenumber) === invNum.trim())
+    if (!found) {
+      alert("Fattura non trovata.")
+      return
+    }
+    if (confirm(`Sei sicuro di voler eliminare la fattura numero ${found.invoicenumber}?`)) {
+      const { error } = await supabaseClient.from('invoices').delete().eq('id', found.id)
+      if (error) {
+        alert("Errore durante l'eliminazione: " + error.message)
+      } else {
+        alert("Fattura eliminata con successo.")
+        loadInvoices()
+        loadYears()
+      }
+    }
+    setInvoiceMenuOpen(false)
   }
 
   // Calcoli per il prospetto (raggruppamento per anno di emissione)
@@ -226,7 +342,6 @@ export default function InvoiceDashboard() {
     const paidByYear = {}
     const unpaidByYear = {}
 
-    // Totali generali pagati e non pagati
     let totalPaidTaxable = 0
     let totalPaidVat = 0
     let totalPaidTotal = 0
@@ -274,7 +389,6 @@ export default function InvoiceDashboard() {
   const { paidByYear, unpaidByYear, paidTotals, unpaidTotals } = calculateProspectSummary()
   const allProspectYears = Array.from(new Set([...Object.keys(paidByYear), ...Object.keys(unpaidByYear)])).sort((a, b) => Number(b) - Number(a))
 
-  // Nome del cliente attualmente selezionato nel prospetto
   const currentSelectedClientName = clientsList.find(c => c.id === prospectClientId)?.name || ''
 
   async function openInsertModal() {
@@ -422,22 +536,54 @@ export default function InvoiceDashboard() {
       <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-4 sm:p-8">
         <div className="max-w-7xl mx-auto space-y-6 no-print">
           
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
+          {/* Header con menu a tendina aggiornati */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl relative z-20">
             <div>
               <h1 className="text-3xl font-extrabold text-white tracking-tight">Gestionale Fatture</h1>
               <p className="text-slate-400 text-sm mt-1">Gestisci, filtra ed emetti le tue fatture in modo semplice</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <button 
-                onClick={() => setIsClientModalOpen(true)}
-                className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg transition-all duration-200 border border-slate-600 text-sm"
-              >
-                <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-                Aggiungi Cliente
-              </button>
+              
+              {/* Menu a tendina CLIENTE */}
+              <div className="relative">
+                <button 
+                  onClick={() => { setClientMenuOpen(!clientMenuOpen); setInvoiceMenuOpen(false); }}
+                  className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg transition-all duration-200 border border-slate-600 text-sm"
+                >
+                  <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  Cliente ▾
+                </button>
+                {clientMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl py-2 z-30">
+                    <button onClick={openAddClientModal} className="w-full text-left px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 hover:text-white">Aggiungi</button>
+                    <button onClick={openEditClientModal} className="w-full text-left px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 hover:text-white">Modifica</button>
+                    <button onClick={handleDeleteClient} className="w-full text-left px-4 py-2 text-sm text-rose-400 hover:bg-slate-800 hover:text-rose-300">Cancella</button>
+                  </div>
+                )}
+              </div>
+
+              {/* Menu a tendina FATTURE */}
+              <div className="relative">
+                <button 
+                  onClick={() => { setInvoiceMenuOpen(!invoiceMenuOpen); setClientMenuOpen(false); }}
+                  className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg transition-all duration-200 border border-slate-600 text-sm"
+                >
+                  <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Fatture ▾
+                </button>
+                {invoiceMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl py-2 z-30">
+                    <button onClick={handleAddInvoiceAction} className="w-full text-left px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 hover:text-white">Aggiungi</button>
+                    <button onClick={handleEditInvoiceAction} className="w-full text-left px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 hover:text-white">Modifica</button>
+                    <button onClick={handleDeleteInvoiceAction} className="w-full text-left px-4 py-2 text-sm text-rose-400 hover:bg-slate-800 hover:text-rose-300">Cancella</button>
+                  </div>
+                )}
+              </div>
+
               <button 
                 onClick={() => setIsProspectOpen(true)}
                 className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg transition-all duration-200 border border-slate-600 text-sm"
@@ -446,15 +592,6 @@ export default function InvoiceDashboard() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
                 Prospetto
-              </button>
-              <button 
-                onClick={openInsertModal}
-                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg shadow-indigo-600/30 transition-all duration-200 text-sm"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Inserisci Fattura
               </button>
             </div>
           </div>
@@ -571,12 +708,12 @@ export default function InvoiceDashboard() {
 
         </div>
 
-        {/* Modal Aggiungi Cliente */}
+        {/* Modal Aggiungi/Modifica Cliente */}
         {isClientModalOpen && (
           <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
             <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6">
               <div className="flex justify-between items-center border-b border-slate-700 pb-4">
-                <h2 className="text-xl font-bold text-white">Nuovo Cliente</h2>
+                <h2 className="text-xl font-bold text-white">{isClientEditMode ? 'Modifica Cliente' : 'Nuovo Cliente'}</h2>
                 <button 
                   onClick={() => setIsClientModalOpen(false)} 
                   className="text-slate-400 hover:text-white transition-colors"
@@ -610,7 +747,7 @@ export default function InvoiceDashboard() {
                     type="submit" 
                     className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-600/30 transition-all"
                   >
-                    Salva Cliente
+                    {isClientEditMode ? 'Salva Modifiche' : 'Salva Cliente'}
                   </button>
                 </div>
               </form>
