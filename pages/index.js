@@ -126,15 +126,33 @@ export default function InvoiceDashboard() {
     }
   }, [isProspectOpen, prospectClientId])
 
+  // Scarica TUTTE le fatture bypassando il limite dei 1000 record di Supabase tramite paginazione
   async function loadAllInvoicesForManagement() {
-    const { data, error } = await supabaseClient
-      .from('invoices')
-      .select('id, invoicenumber, clientid, issuedate, paymentdate, taxableamount, vatamount, totalamount, note')
-      .order('issuedate', { ascending: true })
+    let allData = []
+    let page = 0
+    const pageSize = 1000
+    let fetchMore = true
 
-    if (!error && data) {
-      setAllInvoicesList(data)
+    while (fetchMore) {
+      const { data, error } = await supabaseClient
+        .from('invoices')
+        .select('id, invoicenumber, clientid, issuedate, paymentdate, taxableamount, vatamount, totalamount, note')
+        .order('issuedate', { ascending: true })
+        .range(page * pageSize, (page + 1) * pageSize - 1)
+
+      if (error || !data || data.length === 0) {
+        fetchMore = false
+      } else {
+        allData = [...allData, ...data]
+        if (data.length < pageSize) {
+          fetchMore = false
+        } else {
+          page++
+        }
+      }
     }
+
+    setAllInvoicesList(allData)
   }
 
   function renderManagementChart() {
