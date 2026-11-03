@@ -11,11 +11,21 @@ export default function InvoiceDashboard() {
   const [clientsList, setClientsList] = useState([])
   const [availableYears, setAvailableYears] = useState([])
   
+  // Stati Modale Inserimento/Modifica Fattura
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
   const [currentInvoiceId, setCurrentInvoiceId] = useState(null)
   
-  // Campi del form
+  // Stati Modale Aggiungi Cliente
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false)
+  const [newClientName, setNewClientName] = useState('')
+
+  // Stati per la vista Prospetto
+  const [isProspectOpen, setIsProspectOpen] = useState(false)
+  const [prospectClientId, setProspectClientId] = useState('')
+  const [prospectInvoices, setProspectInvoices] = useState([])
+
+  // Campi del form inserimento/modifica fattura
   const [selectedClientId, setSelectedClientId] = useState('')
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [taxableAmount, setTaxableAmount] = useState('')
@@ -25,7 +35,7 @@ export default function InvoiceDashboard() {
   const [paymentDate, setPaymentDate] = useState('')
   const [invoiceNotes, setInvoiceNotes] = useState('')
 
-  // Filtri di visualizzazione
+  // Filtri di visualizzazione dashboard
   const [filterClient, setFilterClient] = useState('')
   const [filterYear, setFilterYear] = useState('2026')
 
@@ -37,6 +47,14 @@ export default function InvoiceDashboard() {
   useEffect(() => {
     loadInvoices()
   }, [filterClient, filterYear])
+
+  useEffect(() => {
+    if (isProspectOpen && prospectClientId) {
+      loadProspectData(prospectClientId)
+    } else {
+      setProspectInvoices([])
+    }
+  }, [isProspectOpen, prospectClientId])
 
   async function loadClients() {
     const { data, error } = await supabaseClient
@@ -92,6 +110,75 @@ export default function InvoiceDashboard() {
       setInvoicesList(data)
     }
   }
+
+  async function loadProspectData(clientId) {
+    const { data, error } = await supabaseClient
+      .from('invoices')
+      .select('id, invoicenumber, issuedate, paymentdate, taxableamount, vatamount, totalamount')
+      .eq('clientid', clientId)
+      .order('issuedate', { ascending: true })
+
+    if (!error && data) {
+      setProspectInvoices(data)
+    } else {
+      setProspectInvoices([])
+    }
+  }
+
+  // Salvataggio nuovo cliente
+  async function handleSaveClient(event) {
+    event.preventDefault()
+    if (!newClientName.trim()) return
+
+    const { data, error } = await supabaseClient
+      .from('clients')
+      .insert([{ name: newClientName.trim() }])
+      .select()
+
+    if (error) {
+      alert('Errore durante l\'inserimento del cliente: ' + error.message)
+      return
+    }
+
+    setNewClientName('')
+    setIsClientModalOpen(false)
+    loadClients()
+
+    if (data && data.length > 0) {
+      setSelectedClientId(data[0].id)
+    }
+  }
+
+  // Calcoli per il prospetto (raggruppamento per anno di emissione)
+  function calculateProspectSummary() {
+    const paidByYear = {}
+    const unpaidByYear = {}
+
+    prospectInvoices.forEach(item => {
+      if (!item.issuedate) return
+      const year = item.issuedate.substring(0, 4)
+      const tax = Number(item.taxableamount) || 0
+      const vat = Number(item.vatamount) || 0
+      const tot = Number(item.totalamount) || 0
+
+      if (item.paymentdate) {
+        if (!paidByYear[year]) paidByYear[year] = { taxable: 0, vat: 0, total: 0 }
+        paidByYear[year].taxable += tax
+        paidByYear[year].vat += vat
+        paidByYear[year].total += tot
+      } else {
+        if (!unpaidByYear[year]) unpaidByYear[year] = { taxable: 0, vat: 0, total: 0 }
+        unpaidByYear[year].taxable += tax
+        unpaidByYear[year].vat += vat
+        unpaidByYear[year].total += tot
+      }
+    })
+
+    return { paidByYear, unpaidByYear }
+  }
+
+  const { paidByYear, unpaidByYear } = calculateProspectSummary()
+  const allProspectYears = Array.from(new Set([...Object.keys(paidByYear), ...Object.keys(unpaidByYear)])).sort((a, b) => Number(b) - Number(a))
 
   async function openInsertModal() {
     setIsEditMode(false)
@@ -178,6 +265,9 @@ export default function InvoiceDashboard() {
     setIsModalOpen(false)
     loadYears()
     loadInvoices()
+    if (isProspectOpen && prospectClientId) {
+      loadProspectData(prospectClientId)
+    }
   }
 
   return (
@@ -196,15 +286,35 @@ export default function InvoiceDashboard() {
               <h1 className="text-3xl font-extrabold text-white tracking-tight">Gestionale Fatture</h1>
               <p className="text-slate-400 text-sm mt-1">Gestisci, filtra ed emetti le tue fatture in modo semplice</p>
             </div>
-            <button 
-              onClick={openInsertModal}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-indigo-600/30 transition-all duration-200"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-              </svg>
-              Nuova Fattura
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <button 
+                onClick={() => setIsClientModalOpen(true)}
+                className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg transition-all duration-200 border border-slate-600 text-sm"
+              >
+                <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+                Aggiungi Cliente
+              </button>
+              <button 
+                onClick={() => setIsProspectOpen(true)}
+                className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg transition-all duration-200 border border-slate-600 text-sm"
+              >
+                <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Prospetto
+              </button>
+              <button 
+                onClick={openInsertModal}
+                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg shadow-indigo-600/30 transition-all duration-200 text-sm"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Inserisci Fattura
+              </button>
+            </div>
           </div>
 
           {/* Bar Filtri */}
@@ -314,7 +424,215 @@ export default function InvoiceDashboard() {
 
         </div>
 
-        {/* Modal Modifica/Inserimento */}
+        {/* Modal Aggiungi Cliente */}
+        {isClientModalOpen && (
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6">
+              <div className="flex justify-between items-center border-b border-slate-700 pb-4">
+                <h2 className="text-xl font-bold text-white">Nuovo Cliente</h2>
+                <button 
+                  onClick={() => setIsClientModalOpen(false)} 
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveClient} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Nome Azienda / Cliente *</label>
+                  <input 
+                    type="text" 
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                    value={newClientName}
+                    onChange={(e) => setNewClientName(e.target.value)}
+                    placeholder="Es. ACME S.R.L."
+                    required
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsClientModalOpen(false)}
+                    className="px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-700 font-medium transition-colors"
+                  >
+                    Annulla
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-600/30 transition-all"
+                  >
+                    Salva Cliente
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Prospetto */}
+        {isProspectOpen && (
+          <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-6xl w-full shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center border-b border-slate-700 pb-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Prospetto Finanziario Cliente</h2>
+                  <p className="text-slate-400 text-sm mt-1">Seleziona un cliente per visualizzare il dettaglio e i totali per anno</p>
+                </div>
+                <button 
+                  onClick={() => setIsProspectOpen(false)} 
+                  className="text-slate-400 hover:text-white p-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
+                >
+                  ✕ Chiudi
+                </button>
+              </div>
+
+              {/* Selezione Cliente per il Prospetto */}
+              <div className="bg-slate-900 p-4 rounded-xl border border-slate-700 max-w-md">
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Seleziona Cliente</label>
+                <select 
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  value={prospectClientId}
+                  onChange={(e) => setProspectClientId(e.target.value)}
+                >
+                  <option value="">-- Scegli un cliente --</option>
+                  {clientsList.map((clientItem) => (
+                    <option key={clientItem.id} value={clientItem.id}>
+                      {clientItem.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {prospectClientId ? (
+                <div className="space-y-8">
+                  
+                  {/* Sezione Tabelle di Riepilogo per Anno (Pagate e Da Pagare) */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    {/* Tabella Pagate */}
+                    <div className="bg-slate-900 p-5 rounded-xl border border-slate-700 shadow-inner space-y-3">
+                      <h3 className="text-emerald-400 font-bold uppercase tracking-wider text-sm flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Pagate (per anno di emissione)
+                      </h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead>
+                            <tr className="border-b border-slate-800 text-slate-400">
+                              <th className="py-2 px-3">Anno</th>
+                              <th className="py-2 px-3 text-right">Imponibile</th>
+                              <th className="py-2 px-3 text-right">IVA</th>
+                              <th className="py-2 px-3 text-right">Incasso</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-800">
+                            {allProspectYears.map(year => {
+                              const data = paidByYear[year] || { taxable: 0, vat: 0, total: 0 }
+                              return (
+                                <tr key={`paid-${year}`} className="hover:bg-slate-800/50">
+                                  <td className="py-2.5 px-3 font-semibold text-white">{year}</td>
+                                  <td className="py-2.5 px-3 text-right text-slate-300">€ {data.taxable.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                  <td className="py-2.5 px-3 text-right text-slate-300">€ {data.vat.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                  <td className="py-2.5 px-3 text-right font-bold text-emerald-400">€ {data.total.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Tabella Da Pagare */}
+                    <div className="bg-slate-900 p-5 rounded-xl border border-slate-700 shadow-inner space-y-3">
+                      <h3 className="text-amber-400 font-bold uppercase tracking-wider text-sm flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Da Pagare (per anno di emissione)
+                      </h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead>
+                            <tr className="border-b border-slate-800 text-slate-400">
+                              <th className="py-2 px-3">Anno</th>
+                              <th className="py-2 px-3 text-right">Imponibile</th>
+                              <th className="py-2 px-3 text-right">IVA</th>
+                              <th className="py-2 px-3 text-right">Incasso</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-800">
+                            {allProspectYears.map(year => {
+                              const data = unpaidByYear[year] || { taxable: 0, vat: 0, total: 0 }
+                              return (
+                                <tr key={`unpaid-${year}`} className="hover:bg-slate-800/50">
+                                  <td className="py-2.5 px-3 font-semibold text-white">{year}</td>
+                                  <td className="py-2.5 px-3 text-right text-slate-300">€ {data.taxable.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                  <td className="py-2.5 px-3 text-right text-slate-300">€ {data.vat.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                  <td className="py-2.5 px-3 text-right font-bold text-amber-400">€ {data.total.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Tabella Dettaglio Fatture del Cliente */}
+                  <div className="space-y-3">
+                    <h3 className="text-white font-bold text-sm">Elenco Fatture del Cliente Selezionato</h3>
+                    <div className="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden">
+                      <div className="overflow-x-auto max-h-64 overflow-y-auto">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead className="sticky top-0 bg-slate-950 text-slate-400 uppercase tracking-wider">
+                            <tr>
+                              <th className="py-3 px-4">Data Emissione</th>
+                              <th className="py-3 px-4">N° Fattura</th>
+                              <th className="py-3 px-4">Imponibile</th>
+                              <th className="py-3 px-4">IVA</th>
+                              <th className="py-3 px-4">Incasso</th>
+                              <th className="py-3 px-4">Data Incasso (Pagamento)</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-800">
+                            {prospectInvoices.map((item) => (
+                              <tr key={item.id} className="hover:bg-slate-800/40">
+                                <td className="py-3 px-4 text-slate-300">{item.issuedate}</td>
+                                <td className="py-3 px-4 font-bold text-indigo-400">#{item.invoicenumber}</td>
+                                <td className="py-3 px-4 text-slate-300">€ {Number(item.taxableamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="py-3 px-4 text-slate-300">€ {Number(item.vatamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="py-3 px-4 font-semibold text-emerald-400">€ {Number(item.totalamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="py-3 px-4">
+                                  {item.paymentdate ? (
+                                    <span className="text-emerald-400 font-medium">{item.paymentdate}</span>
+                                  ) : (
+                                    <span className="text-amber-500 italic">Da pagare</span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                            {prospectInvoices.length === 0 && (
+                              <tr>
+                                <td colSpan="6" className="py-8 text-center text-slate-500">Nessuna fattura registrata per questo cliente.</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              ) : (
+                <div className="py-16 text-center text-slate-500 bg-slate-900 rounded-xl border border-slate-700">
+                  Seleziona un cliente dal menu sopra per generare il prospetto finanziario.
+                </div>
+              )}
+
+            </div>
+          </div>
+        )}
+
+        {/* Modal Modifica/Inserimento Fattura */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-6">
