@@ -23,9 +23,9 @@ export default function InvoiceDashboard() {
   const [paymentDate, setPaymentDate] = useState('')
   const [invoiceNotes, setInvoiceNotes] = useState('')
 
-  // Filtri di visualizzazione
+  // Filtri di visualizzazione (default 2026)
   const [filterClient, setFilterClient] = useState('')
-  const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString())
+  const [filterYear, setFilterYear] = useState('2026')
 
   useEffect(() => {
     loadClients()
@@ -51,28 +51,25 @@ export default function InvoiceDashboard() {
       .from('invoices')
       .select('issuedate')
     
+    const yearsSet = new Set()
+    // Aggiungiamo sempre l'anno corrente (2026) e eventuali anni recenti per sicurezza
+    yearsSet.add('2026')
+    yearsSet.add(new Date().getFullYear().toString())
+
     if (!error && data) {
-      const yearsSet = new Set()
       data.forEach(item => {
         if (item.issuedate) {
-          const yearValue = item.issuedate.split('-')[0]
-          yearsSet.add(yearValue)
+          // Estrae i primi 4 caratteri della data (l'anno) indipendentemente dal formato stringa
+          const yearValue = String(item.issuedate).substring(0, 4)
+          if (yearValue && !isNaN(yearValue) && yearValue.length === 4) {
+            yearsSet.add(yearValue)
+          }
         }
       })
-      const yearsArray = Array.from(yearsSet).sort((a, b) => b - a)
-      
-      // Se non ci sono anni, metti l'anno corrente come default
-      if (yearsArray.length === 0) {
-        yearsArray.push(new Date().getFullYear().toString())
-      }
-      
-      setAvailableYears(yearsArray)
-      
-      // Se l'anno selezionato attualmente non è nella lista, imposta il primo disponibile
-      if (!yearsArray.includes(filterYear) && yearsArray.length > 0) {
-        setFilterYear(yearsArray[0])
-      }
     }
+
+    const yearsArray = Array.from(yearsSet).sort((a, b) => Number(b) - Number(a))
+    setAvailableYears(yearsArray)
   }
 
   async function loadInvoices() {
@@ -105,7 +102,7 @@ export default function InvoiceDashboard() {
     setInvoiceNotes('')
     setInvoiceDate(new Date().toISOString().split('T')[0])
 
-    const currentYearValue = new Date().getFullYear()
+    const currentYearValue = filterYear || new Date().getFullYear().toString()
     const startDate = `${currentYearValue}-01-01`
     const endDate = `${currentYearValue}-12-31`
 
