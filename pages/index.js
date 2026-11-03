@@ -185,6 +185,12 @@ export default function InvoiceDashboard() {
       .order('issuedate', { ascending: true })
 
     if (!error && data) {
+      // Ordinamento rigoroso dal più vecchio al più nuovo: prima per data, poi per numero fattura crescente
+      data.sort((a, b) => {
+        const dateCompare = (a.issuedate || '').localeCompare(b.issuedate || '')
+        if (dateCompare !== 0) return dateCompare
+        return (Number(a.invoicenumber) || 0) - (Number(b.invoicenumber) || 0)
+      })
       setProspectInvoices(data)
     } else {
       setProspectInvoices([])
