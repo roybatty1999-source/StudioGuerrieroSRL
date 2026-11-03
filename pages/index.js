@@ -25,6 +25,7 @@ export default function InvoiceDashboard() {
   const [prospectClientId, setProspectClientId] = useState('')
   const [prospectInvoices, setProspectInvoices] = useState([])
   const [prospectFilterYear, setProspectFilterYear] = useState('')
+  const [prospectFilterStatus, setProspectFilterStatus] = useState('all')
 
   // Campi del form inserimento/modifica fattura
   const [selectedClientId, setSelectedClientId] = useState('')
@@ -55,6 +56,7 @@ export default function InvoiceDashboard() {
     } else {
       setProspectInvoices([])
       setProspectFilterYear('')
+      setProspectFilterStatus('all')
     }
   }, [isProspectOpen, prospectClientId])
 
@@ -182,11 +184,18 @@ export default function InvoiceDashboard() {
   const { paidByYear, unpaidByYear } = calculateProspectSummary()
   const allProspectYears = Array.from(new Set([...Object.keys(paidByYear), ...Object.keys(unpaidByYear)])).sort((a, b) => Number(b) - Number(a))
 
-  // Fatture filtrate per anno nel prospetto
+  // Fatture filtrate per anno e per stato nel prospetto
   const filteredProspectInvoices = prospectInvoices.filter(item => {
-    if (!prospectFilterYear) return true
-    if (!item.issuedate) return false
-    return item.issuedate.substring(0, 4) === prospectFilterYear
+    const matchesYear = !prospectFilterYear || (item.issuedate && item.issuedate.substring(0, 4) === prospectFilterYear)
+    
+    let matchesStatus = true
+    if (prospectFilterStatus === 'unpaid') {
+      matchesStatus = !item.paymentdate
+    } else if (prospectFilterStatus === 'paid') {
+      matchesStatus = !!item.paymentdate
+    }
+
+    return matchesYear && matchesStatus
   })
 
   async function openInsertModal() {
@@ -506,6 +515,7 @@ export default function InvoiceDashboard() {
                   onChange={(e) => {
                     setProspectClientId(e.target.value)
                     setProspectFilterYear('')
+                    setProspectFilterStatus('all')
                   }}
                 >
                   <option value="">-- Scegli un cliente --</option>
@@ -589,23 +599,38 @@ export default function InvoiceDashboard() {
 
                   </div>
 
-                  {/* Sezione Filtro Anno per l'Elenco Fatture del Prospetto */}
+                  {/* Sezione Filtri Anno e Stato per l'Elenco Fatture del Prospetto */}
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 p-4 rounded-xl border border-slate-700">
                     <h3 className="text-white font-bold text-sm">Elenco Fatture del Cliente</h3>
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                      <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Filtra Anno:</label>
-                      <select 
-                        className="bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-40"
-                        value={prospectFilterYear}
-                        onChange={(e) => setProspectFilterYear(e.target.value)}
-                      >
-                        <option value="">Tutti gli anni</option>
-                        {allProspectYears.map(yearItem => (
-                          <option key={`prospect-filter-${yearItem}`} value={yearItem}>
-                            {yearItem}
-                          </option>
-                        ))}
-                      </select>
+                    <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                      <div className="flex items-center gap-2 flex-1 sm:flex-initial">
+                        <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Anno:</label>
+                        <select 
+                          className="bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-36"
+                          value={prospectFilterYear}
+                          onChange={(e) => setProspectFilterYear(e.target.value)}
+                        >
+                          <option value="">Tutti gli anni</option>
+                          {allProspectYears.map(yearItem => (
+                            <option key={`prospect-filter-${yearItem}`} value={yearItem}>
+                              {yearItem}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-1 sm:flex-initial">
+                        <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Stato:</label>
+                        <select 
+                          className="bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-40"
+                          value={prospectFilterStatus}
+                          onChange={(e) => setProspectFilterStatus(e.target.value)}
+                        >
+                          <option value="all">Tutte le fatture</option>
+                          <option value="unpaid">Solo non pagate</option>
+                          <option value="paid">Solo pagate</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
 
@@ -642,7 +667,7 @@ export default function InvoiceDashboard() {
                           ))}
                           {filteredProspectInvoices.length === 0 && (
                             <tr>
-                              <td colSpan="6" className="py-8 text-center text-slate-500">Nessuna fattura trovata per l'anno selezionato.</td>
+                              <td colSpan="6" className="py-8 text-center text-slate-500">Nessuna fattura trovata con i filtri selezionati.</td>
                             </tr>
                           )}
                         </tbody>
