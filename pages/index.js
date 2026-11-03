@@ -32,6 +32,15 @@ export default function InvoiceDashboard() {
   const [selectedClientToEditId, setSelectedClientToEditId] = useState('')
   const [newClientName, setNewClientName] = useState('')
 
+  // Stati per i menu a tendina di selezione interattiva (Modifica/Cancella)
+  const [isSelectClientModalOpen, setIsSelectClientModalOpen] = useState(false)
+  const [clientActionType, setClientActionType] = useState('edit') // 'edit' o 'delete'
+  const [targetClientId, setTargetClientId] = useState('')
+
+  const [isSelectInvoiceModalOpen, setIsSelectInvoiceModalOpen] = useState(false)
+  const [invoiceActionType, setInvoiceActionType] = useState('edit') // 'edit' o 'delete'
+  const [targetInvoiceId, setTargetInvoiceId] = useState('')
+
   // Stati per i menu a tendina (Dropdown) della barra superiore
   const [clientMenuOpen, setClientMenuOpen] = useState(false)
   const [invoiceMenuOpen, setInvoiceMenuOpen] = useState(false)
@@ -202,7 +211,7 @@ export default function InvoiceDashboard() {
     }
   }
 
-  // Azioni Cliente: Aggiungi / Modifica / Cancella
+  // Gestione menu Cliente
   function openAddClientModal() {
     setIsClientEditMode(false)
     setNewClientName('')
@@ -211,49 +220,56 @@ export default function InvoiceDashboard() {
     setClientMenuOpen(false)
   }
 
-  function openEditClientModal() {
-    if (clientsList.length === 0) {
-      alert("Nessun cliente disponibile da modificare.")
-      return
-    }
-    const clientIdToEdit = prompt("Seleziona il nome o inserisci l'ID del cliente da modificare, oppure scegli dall'elenco:\n" + clientsList.map(c => `- ${c.name} (ID: ${c.id})`).join('\n'))
-    if (!clientIdToEdit) return
-    const found = clientsList.find(c => c.id === clientIdToEdit || c.name.toLowerCase() === clientIdToEdit.toLowerCase())
-    if (found) {
-      setIsClientEditMode(true)
-      setSelectedClientToEditId(found.id)
-      setNewClientName(found.name)
-      setIsClientModalOpen(true)
-    } else {
-      alert("Cliente non trovato.")
-    }
-    setClientMenuOpen(false)
-  }
-
-  async function handleDeleteClient() {
+  function openSelectClientForEdit() {
     if (clientsList.length === 0) {
       alert("Nessun cliente disponibile.")
       return
     }
-    const clientNameInput = prompt("Inserisci il nome esatto del cliente da cancellare (attenzione: verranno eliminate anche le relative fatture collegate):")
-    if (!clientNameInput) return
-    const found = clientsList.find(c => c.name.toLowerCase() === clientNameInput.trim().toLowerCase())
-    if (!found) {
-      alert("Cliente non trovato.")
+    setClientActionType('edit')
+    setTargetClientId(clientsList[0].id)
+    setIsSelectClientModalOpen(true)
+    setClientMenuOpen(false)
+  }
+
+  function openSelectClientForDelete() {
+    if (clientsList.length === 0) {
+      alert("Nessun cliente disponibile.")
       return
     }
-    if (confirm(`Sei sicuro di voler eliminare il cliente ${found.name} e tutte le sue fatture?`)) {
-      await supabaseClient.from('invoices').delete().eq('clientid', found.id)
-      const { error } = await supabaseClient.from('clients').delete().eq('id', found.id)
-      if (error) {
-        alert("Errore durante l'eliminazione: " + error.message)
-      } else {
-        alert("Cliente eliminato con successo.")
-        loadClients()
-        loadInvoices()
+    setClientActionType('delete')
+    setTargetClientId(clientsList[0].id)
+    setIsSelectClientModalOpen(true)
+    setClientMenuOpen(false)
+  }
+
+  async function handleConfirmClientSelection(e) {
+    e.preventDefault()
+    if (!targetClientId) return
+
+    if (clientActionType === 'edit') {
+      const found = clientsList.find(c => c.id === targetClientId)
+      if (found) {
+        setIsClientEditMode(true)
+        setSelectedClientToEditId(found.id)
+        setNewClientName(found.name)
+        setIsSelectClientModalOpen(false)
+        setIsClientModalOpen(true)
+      }
+    } else if (clientActionType === 'delete') {
+      const found = clientsList.find(c => c.id === targetClientId)
+      if (found && confirm(`Sei sicuro di voler eliminare il cliente ${found.name} e tutte le sue fatture collegate?`)) {
+        await supabaseClient.from('invoices').delete().eq('clientid', found.id)
+        const { error } = await supabaseClient.from('clients').delete().eq('id', found.id)
+        if (error) {
+          alert("Errore durante l'eliminazione: " + error.message)
+        } else {
+          alert("Cliente eliminato con successo.")
+          loadClients()
+          loadInvoices()
+        }
+        setIsSelectClientModalOpen(false)
       }
     }
-    setClientMenuOpen(false)
   }
 
   async function handleSaveClient(event) {
@@ -290,51 +306,60 @@ export default function InvoiceDashboard() {
     loadClients()
   }
 
-  // Azioni Fatture: Aggiungi / Modifica / Cancella
+  // Gestione menu Fatture
   function handleAddInvoiceAction() {
     openInsertModal()
     setInvoiceMenuOpen(false)
   }
 
-  function handleEditInvoiceAction() {
-    if (invoicesList.length === 0) {
-      alert("Nessuna fattura presente da modificare.")
-      return
-    }
-    const invNum = prompt("Inserisci il numero della fattura da modificare (es. 596):")
-    if (!invNum) return
-    const found = invoicesList.find(i => String(i.invoicenumber) === invNum.trim())
-    if (found) {
-      openEditModal(found)
-    } else {
-      alert("Fattura non trovata.")
-    }
-    setInvoiceMenuOpen(false)
-  }
-
-  async function handleDeleteInvoiceAction() {
+  function openSelectInvoiceForEdit() {
     if (invoicesList.length === 0) {
       alert("Nessuna fattura presente.")
       return
     }
-    const invNum = prompt("Inserisci il numero della fattura da cancellare:")
-    if (!invNum) return
-    const found = invoicesList.find(i => String(i.invoicenumber) === invNum.trim())
-    if (!found) {
-      alert("Fattura non trovata.")
+    setInvoiceActionType('edit')
+    setTargetInvoiceId(invoicesList[0].id)
+    setIsSelectInvoiceModalOpen(true)
+    setInvoiceMenuOpen(false)
+  }
+
+  function openSelectInvoiceForDelete() {
+    if (invoicesList.length === 0) {
+      alert("Nessuna fattura presente.")
       return
     }
-    if (confirm(`Sei sicuro di voler eliminare la fattura numero ${found.invoicenumber}?`)) {
-      const { error } = await supabaseClient.from('invoices').delete().eq('id', found.id)
-      if (error) {
-        alert("Errore durante l'eliminazione: " + error.message)
-      } else {
-        alert("Fattura eliminata con successo.")
-        loadInvoices()
-        loadYears()
+    setInvoiceActionType('delete')
+    setTargetInvoiceId(invoicesList[0].id)
+    setIsSelectInvoiceModalOpen(true)
+    setInvoiceMenuOpen(false)
+  }
+
+  async function handleConfirmInvoiceSelection(e) {
+    e.preventDefault()
+    if (!targetInvoiceId) return
+
+    const found = invoicesList.find(i => i.id === targetInvoiceId)
+    if (!found) return
+
+    if (invoiceActionType === 'edit') {
+      setIsSelectInvoiceModalOpen(false)
+      openEditModal(found)
+    } else if (invoiceActionType === 'delete') {
+      const yearFromDate = found.issuedate ? found.issuedate.substring(0, 4) : ''
+      const displayNum = found.invoicenumber && yearFromDate ? `${found.invoicenumber}/${yearFromDate}` : found.invoicenumber
+      
+      if (confirm(`Sei sicuro di voler eliminare la fattura numero ${displayNum}?`)) {
+        const { error } = await supabaseClient.from('invoices').delete().eq('id', found.id)
+        if (error) {
+          alert("Errore durante l'eliminazione: " + error.message)
+        } else {
+          alert("Fattura eliminata con successo.")
+          loadInvoices()
+          loadYears()
+        }
+        setIsSelectInvoiceModalOpen(false)
       }
     }
-    setInvoiceMenuOpen(false)
   }
 
   // Calcoli per il prospetto (raggruppamento per anno di emissione)
@@ -536,7 +561,7 @@ export default function InvoiceDashboard() {
       <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-4 sm:p-8">
         <div className="max-w-7xl mx-auto space-y-6 no-print">
           
-          {/* Header con menu a tendina aggiornati */}
+          {/* Header con menu a tendina */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl relative z-20">
             <div>
               <h1 className="text-3xl font-extrabold text-white tracking-tight">Gestionale Fatture</h1>
@@ -558,8 +583,8 @@ export default function InvoiceDashboard() {
                 {clientMenuOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl py-2 z-30">
                     <button onClick={openAddClientModal} className="w-full text-left px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 hover:text-white">Aggiungi</button>
-                    <button onClick={openEditClientModal} className="w-full text-left px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 hover:text-white">Modifica</button>
-                    <button onClick={handleDeleteClient} className="w-full text-left px-4 py-2 text-sm text-rose-400 hover:bg-slate-800 hover:text-rose-300">Cancella</button>
+                    <button onClick={openSelectClientForEdit} className="w-full text-left px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 hover:text-white">Modifica</button>
+                    <button onClick={openSelectClientForDelete} className="w-full text-left px-4 py-2 text-sm text-rose-400 hover:bg-slate-800 hover:text-rose-300">Cancella</button>
                   </div>
                 )}
               </div>
@@ -578,8 +603,8 @@ export default function InvoiceDashboard() {
                 {invoiceMenuOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl py-2 z-30">
                     <button onClick={handleAddInvoiceAction} className="w-full text-left px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 hover:text-white">Aggiungi</button>
-                    <button onClick={handleEditInvoiceAction} className="w-full text-left px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 hover:text-white">Modifica</button>
-                    <button onClick={handleDeleteInvoiceAction} className="w-full text-left px-4 py-2 text-sm text-rose-400 hover:bg-slate-800 hover:text-rose-300">Cancella</button>
+                    <button onClick={openSelectInvoiceForEdit} className="w-full text-left px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 hover:text-white">Modifica</button>
+                    <button onClick={openSelectInvoiceForDelete} className="w-full text-left px-4 py-2 text-sm text-rose-400 hover:bg-slate-800 hover:text-rose-300">Cancella</button>
                   </div>
                 )}
               </div>
@@ -707,6 +732,105 @@ export default function InvoiceDashboard() {
           </div>
 
         </div>
+
+        {/* Modal Selezione Cliente per Modifica/Cancella tramite menu a tendina */}
+        {isSelectClientModalOpen && (
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6">
+              <div className="flex justify-between items-center border-b border-slate-700 pb-4">
+                <h2 className="text-xl font-bold text-white">
+                  {clientActionType === 'edit' ? 'Seleziona Cliente da Modificare' : 'Seleziona Cliente da Eliminare'}
+                </h2>
+                <button onClick={() => setIsSelectClientModalOpen(false)} className="text-slate-400 hover:text-white">✕</button>
+              </div>
+
+              <form onSubmit={handleConfirmClientSelection} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Cliente</label>
+                  <select 
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                    value={targetClientId}
+                    onChange={(e) => setTargetClientId(e.target.value)}
+                    required
+                  >
+                    {clientsList.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsSelectClientModalOpen(false)}
+                    className="px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-700 font-medium transition-colors"
+                  >
+                    Annulla
+                  </button>
+                  <button 
+                    type="submit" 
+                    className={`px-5 py-2.5 rounded-xl font-semibold text-white shadow-lg transition-all ${clientActionType === 'delete' ? 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/30' : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/30'}`}
+                  >
+                    {clientActionType === 'edit' ? 'Avanti' : 'Elimina Cliente'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Selezione Fattura per Modifica/Cancella tramite menu a tendina */}
+        {isSelectInvoiceModalOpen && (
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6">
+              <div className="flex justify-between items-center border-b border-slate-700 pb-4">
+                <h2 className="text-xl font-bold text-white">
+                  {invoiceActionType === 'edit' ? 'Seleziona Fattura da Modificare' : 'Seleziona Fattura da Eliminare'}
+                </h2>
+                <button onClick={() => setIsSelectInvoiceModalOpen(false)} className="text-slate-400 hover:text-white">✕</button>
+              </div>
+
+              <form onSubmit={handleConfirmInvoiceSelection} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Fattura</label>
+                  <select 
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                    value={targetInvoiceId}
+                    onChange={(e) => setTargetInvoiceId(e.target.value)}
+                    required
+                  >
+                    {invoicesList.map((i) => {
+                      const yearFromDate = i.issuedate ? i.issuedate.substring(0, 4) : ''
+                      const displayNum = i.invoicenumber && yearFromDate ? `${i.invoicenumber}/${yearFromDate}` : i.invoicenumber
+                      const clientName = i.clients?.name || 'Cliente sconosciuto'
+                      return (
+                        <option key={i.id} value={i.id}>
+                          N° {displayNum} - {clientName} ({formatDateToIT(i.issuedate)})
+                        </option>
+                      )
+                    })}
+                  </select>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsSelectInvoiceModalOpen(false)}
+                    className="px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-700 font-medium transition-colors"
+                  >
+                    Annulla
+                  </button>
+                  <button 
+                    type="submit" 
+                    className={`px-5 py-2.5 rounded-xl font-semibold text-white shadow-lg transition-all ${invoiceActionType === 'delete' ? 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/30' : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/30'}`}
+                  >
+                    {invoiceActionType === 'edit' ? 'Avanti' : 'Elimina Fattura'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* Modal Aggiungi/Modifica Cliente */}
         {isClientModalOpen && (
