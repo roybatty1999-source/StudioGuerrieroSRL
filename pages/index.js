@@ -60,6 +60,20 @@ export default function InvoiceDashboard() {
     }
   }, [isProspectOpen, prospectClientId])
 
+  // Calcolo automatico di IVA e Incasso al variare dell'Imponibile
+  useEffect(() => {
+    const tax = Number(taxableAmount)
+    if (!isNaN(tax) && taxableAmount !== '') {
+      const vat = tax * 0.22
+      const tot = tax + vat
+      setVatAmount(vat.toFixed(2))
+      setTotalAmount(tot.toFixed(2))
+    } else {
+      setVatAmount('')
+      setTotalAmount('')
+    }
+  }, [taxableAmount])
+
   async function loadClients() {
     const { data, error } = await supabaseClient
       .from('clients')
@@ -791,24 +805,24 @@ export default function InvoiceDashboard() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">IVA (€)</label>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">IVA (€ - Auto)</label>
                     <input 
                       type="number" 
                       step="0.01" 
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-400 cursor-not-allowed outline-none"
                       value={vatAmount}
-                      onChange={(e) => setVatAmount(e.target.value)}
+                      readOnly
                       placeholder="0.00"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Incasso (€)</label>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Incasso (€ - Auto)</label>
                     <input 
                       type="number" 
                       step="0.01" 
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-400 cursor-not-allowed outline-none"
                       value={totalAmount}
-                      onChange={(e) => setTotalAmount(e.target.value)}
+                      readOnly
                       placeholder="0.00"
                     />
                   </div>
