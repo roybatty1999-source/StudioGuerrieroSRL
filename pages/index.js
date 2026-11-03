@@ -220,6 +220,15 @@ export default function InvoiceDashboard() {
     const paidByYear = {}
     const unpaidByYear = {}
 
+    // Totali generali pagati e non pagati
+    let totalPaidTaxable = 0
+    let totalPaidVat = 0
+    let totalPaidTotal = 0
+
+    let totalUnpaidTaxable = 0
+    let totalUnpaidVat = 0
+    let totalUnpaidTotal = 0
+
     prospectInvoices.forEach(item => {
       if (!item.issuedate) return
       const year = item.issuedate.substring(0, 4)
@@ -232,25 +241,35 @@ export default function InvoiceDashboard() {
         paidByYear[year].taxable += tax
         paidByYear[year].vat += vat
         paidByYear[year].total += tot
+
+        totalPaidTaxable += tax
+        totalPaidVat += vat
+        totalPaidTotal += tot
       } else {
         if (!unpaidByYear[year]) unpaidByYear[year] = { taxable: 0, vat: 0, total: 0 }
         unpaidByYear[year].taxable += tax
         unpaidByYear[year].vat += vat
         unpaidByYear[year].total += tot
+
+        totalUnpaidTaxable += tax
+        totalUnpaidVat += vat
+        totalUnpaidTotal += tot
       }
     })
 
-    return { paidByYear, unpaidByYear }
+    return { 
+      paidByYear, 
+      unpaidByYear, 
+      paidTotals: { taxable: totalPaidTaxable, vat: totalPaidVat, total: totalPaidTotal },
+      unpaidTotals: { taxable: totalUnpaidTaxable, vat: totalUnpaidVat, total: totalUnpaidTotal }
+    }
   }
 
-  const { paidByYear, unpaidByYear } = calculateProspectSummary()
+  const { paidByYear, unpaidByYear, paidTotals, unpaidTotals } = calculateProspectSummary()
   const allProspectYears = Array.from(new Set([...Object.keys(paidByYear), ...Object.keys(unpaidByYear)])).sort((a, b) => Number(b) - Number(a))
 
   // Nome del cliente attualmente selezionato nel prospetto
   const currentSelectedClientName = clientsList.find(c => c.id === prospectClientId)?.name || ''
-
-  // Fatture non pagate specifiche per la stampa pulita del cliente selezionato
-  const unpaidProspectInvoices = prospectInvoices.filter(item => !item.paymentdate)
 
   async function openInsertModal() {
     setIsEditMode(false)
@@ -682,6 +701,15 @@ export default function InvoiceDashboard() {
                               )
                             })}
                           </tbody>
+                          {/* Riga Totale Complessivo Pagate */}
+                          <tfoot>
+                            <tr className="border-t-2 border-emerald-500/40 bg-slate-950/60 font-bold">
+                              <td className="py-2.5 px-3 text-white uppercase text-[10px]">Totale</td>
+                              <td className="py-2.5 px-3 text-right text-slate-200">€ {paidTotals.taxable.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="py-2.5 px-3 text-right text-slate-200">€ {paidTotals.vat.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="py-2.5 px-3 text-right text-emerald-400">€ {paidTotals.total.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            </tr>
+                          </tfoot>
                         </table>
                       </div>
                     </div>
@@ -714,6 +742,15 @@ export default function InvoiceDashboard() {
                               )
                             })}
                           </tbody>
+                          {/* Riga Totale Complessivo Non Pagate */}
+                          <tfoot>
+                            <tr className="border-t-2 border-amber-500/40 bg-slate-950/60 font-bold">
+                              <td className="py-2.5 px-3 text-white uppercase text-[10px]">Totale</td>
+                              <td className="py-2.5 px-3 text-right text-slate-200">€ {unpaidTotals.taxable.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="py-2.5 px-3 text-right text-slate-200">€ {unpaidTotals.vat.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="py-2.5 px-3 text-right text-amber-400">€ {unpaidTotals.total.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            </tr>
+                          </tfoot>
                         </table>
                       </div>
                     </div>
