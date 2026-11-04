@@ -82,11 +82,12 @@ export default function ServicesDashboard() {
     }
   }
 
-  async function loadCpaCodes() {
+async function loadCpaCodes() {
     const { data, error } = await supabaseClient
       .from('cpacodes')
       .select('code, description')
       .order('code', { ascending: true })
+      .range(0, 4999) // <-- Estende il limite oltre le 1000 righe predefinite di Supabase
 
     if (!error && data) {
       setCpaDatabase(data)
