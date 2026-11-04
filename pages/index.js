@@ -6,6 +6,29 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const supabaseClient = createClient(supabaseUrl, supabaseKey)
 
+// Elenco/Database CPA Online integrato per ricerca rapida
+const CPA_DATABASE = [
+  { code: '62.01.11', description: 'Servizi di progettazione e sviluppo di pagine web e applicazioni' },
+  { code: '62.02.10', description: 'Servizi di consulenza nel campo delle tecnologie dell’informazione' },
+  { code: '62.03.10', description: 'Servizi di gestione di strutture e apparecchiature informatiche' },
+  { code: '62.09.20', description: 'Altri servizi di tecnologia dell’informazione e di assistenza informatica' },
+  { code: '63.11.11', description: 'Servizi di elaborazione dati, hosting e servizi connessi' },
+  { code: '69.20.10', description: 'Servizi di contabilità, revisione dei conti e consulenza fiscale' },
+  { code: '69.20.20', description: 'Servizi di tenuta delle scritture contabili' },
+  { code: '69.10.10', description: 'Servizi legali e di consulenza giuridica' },
+  { code: '70.22.11', description: 'Servizi di consulenza di direzione aziendale e gestione commerciale' },
+  { code: '70.22.12', description: 'Servizi di consulenza in materia di gestione finanziaria' },
+  { code: '71.12.11', description: 'Servizi di consulenza ingegneristica per lavori edili e civili' },
+  { code: '71.11.10', description: 'Servizi di architettura' },
+  { code: '73.11.11', description: 'Servizi pubblicitari completi e pianificazione di campagne' },
+  { code: '73.20.11', description: 'Servizi di ricerche di mercato e sondaggi di opinione' },
+  { code: '74.10.10', description: 'Servizi di design e grafica pubblicitaria' },
+  { code: '78.10.10', description: 'Servizi di ricerca, selezione e collocamento del personale' },
+  { code: '80.10.12', description: 'Servizi di vigilanza privata e protezione' },
+  { code: '81.21.10', description: 'Servizi di pulizia generale di edifici' },
+  { code: '82.11.10', description: 'Servizi integrati di supporto alle funzioni d’ufficio' }
+]
+
 export default function ServicesDashboard() {
   const [servicesList, setServicesList] = useState([])
   const [clientsList, setClientsList] = useState([])
@@ -22,6 +45,10 @@ export default function ServicesDashboard() {
   const [cpaCode, setCpaCode] = useState('')
   const [delivery, setDelivery] = useState('I') // 'I' o 'R'
   const [collectionType, setCollectionType] = useState('R') // 'R', 'B' o 'X'
+
+  // Stato per la ricerca e il dropdown CPA
+  const [cpaSearchQuery, setCpaSearchQuery] = useState('')
+  const [showCpaDropdown, setShowCpaDropdown] = useState(false)
 
   useEffect(() => {
     loadClients()
@@ -56,6 +83,7 @@ export default function ServicesDashboard() {
     setIsVendor(false)
     setServiceDescription('')
     setCpaCode('')
+    setCpaSearchQuery('')
     setDelivery('I')
     setCollectionType('R')
     setIsModalOpen(true)
@@ -68,6 +96,7 @@ export default function ServicesDashboard() {
     setIsVendor(service.isvendor)
     setServiceDescription(service.servicedescription)
     setCpaCode(service.cpacode)
+    setCpaSearchQuery(service.cpacode)
     setDelivery(service.delivery)
     setCollectionType(service.collectiontype)
     setIsModalOpen(true)
@@ -81,6 +110,17 @@ export default function ServicesDashboard() {
       } else {
         loadServices()
       }
+    }
+  }
+
+  function handleSelectCpaItem(item) {
+    setCpaCode(item.code)
+    setCpaSearchQuery(`${item.code} - ${item.description}`)
+    setShowCpaDropdown(false)
+
+    // Se la descrizione del servizio è vuota, suggeriamo automaticamente la descrizione CPA
+    if (!serviceDescription || serviceDescription.trim().length === 0) {
+      setServiceDescription(item.description)
     }
   }
 
@@ -125,6 +165,12 @@ export default function ServicesDashboard() {
     setIsModalOpen(false)
     loadServices()
   }
+
+  // Filtraggio CPA dinamico in base alla digitazione
+  const filteredCpaList = CPA_DATABASE.filter(item => 
+    item.code.toLowerCase().includes(cpaSearchQuery.toLowerCase()) ||
+    item.description.toLowerCase().includes(cpaSearchQuery.toLowerCase())
+  )
 
   return (
     <>
@@ -261,6 +307,42 @@ export default function ServicesDashboard() {
                   </div>
                 </div>
 
+                {/* Campo Ricerca Codice CPA con Dropdown */}
+                <div className="relative">
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Codice CPA (Cerca o Seleziona da CPA Online) *</label>
+                  <input 
+                    type="text" 
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-mono"
+                    value={cpaSearchQuery}
+                    onChange={(e) => {
+                      setCpaSearchQuery(e.target.value)
+                      setCpaCode(e.target.value)
+                      setShowCpaDropdown(true)
+                    }}
+                    onFocus={() => setShowCpaDropdown(true)}
+                    placeholder="Digita codice o parola chiave (es. 62.01.11 o web)..."
+                    required
+                  />
+
+                  {/* Dropdown dei Risultati CPA */}
+                  {showCpaDropdown && filteredCpaList.length > 0 && (
+                    <div className="absolute left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-800">
+                      {filteredCpaList.map((item) => (
+                        <div 
+                          key={item.code} 
+                          onClick={() => handleSelectCpaItem(item)}
+                          className="p-3 hover:bg-indigo-600/30 cursor-pointer text-xs transition-colors flex justify-between items-center"
+                        >
+                          <div>
+                            <span className="font-bold text-indigo-400 font-mono mr-2">{item.code}</span>
+                            <span className="text-slate-200">{item.description}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
                     Descrizione Servizio (min. 50 caratteri) * [{serviceDescription.length}/50]
@@ -276,18 +358,6 @@ export default function ServicesDashboard() {
                   {serviceDescription.length > 0 && serviceDescription.length < 50 && (
                     <p className="text-rose-400 text-xs mt-1">Mancano ancora {50 - serviceDescription.length} caratteri.</p>
                   )}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Codice CPA (Tabella CPA) *</label>
-                  <input 
-                    type="text" 
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-mono"
-                    value={cpaCode}
-                    onChange={(e) => setCpaCode(e.target.value)}
-                    placeholder="Es. 71.12.11"
-                    required
-                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
