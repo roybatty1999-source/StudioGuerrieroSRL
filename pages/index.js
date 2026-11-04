@@ -16,6 +16,12 @@ export default function ServicesDashboard() {
   const [showClientMenu, setShowClientMenu] = useState(false)
   const clientMenuRef = useRef(null)
 
+  // Filtro per Codice CPA Globale ("Ricerca")
+  const [selectedCpaFilter, setSelectedCpaFilter] = useState('ALL')
+  const [showCpaSearchMenu, setShowCpaSearchMenu] = useState(false)
+  const [cpaMenuSearchQuery, setCpaMenuSearchQuery] = useState('')
+  const cpaSearchMenuRef = useRef(null)
+
   // Stati Modale Inserimento/Modifica Servizio
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
@@ -34,20 +40,6 @@ export default function ServicesDashboard() {
   const [showCpaDropdown, setShowCpaDropdown] = useState(false)
   const cpaRef = useRef(null)
 
-  // Stati per il Menu a scomparsa "Codici" (CPA)
-  const [showCpaMenu, setShowCpaMenu] = useState(false)
-  const cpaMenuRef = useRef(null)
-
-  // Modali Gestione Tabella cpacodes
-  const [isCpaAddModalOpen, setIsCpaAddModalOpen] = useState(false)
-  const [isCpaManageModalOpen, setIsCpaManageModalOpen] = useState(false)
-  
-  // Form Aggiungi/Modifica CPA
-  const [newCpaCode, setNewCpaCode] = useState('')
-  const [newCpaDesc, setNewCpaDesc] = useState('')
-  const [editingCpaCodeOriginal, setEditingCpaCodeOriginal] = useState(null)
-  const [cpaFilterText, setCpaFilterText] = useState('')
-
   useEffect(() => {
     loadClients()
     loadServices()
@@ -57,11 +49,11 @@ export default function ServicesDashboard() {
       if (cpaRef.current && !cpaRef.current.contains(event.target)) {
         setShowCpaDropdown(false)
       }
-      if (cpaMenuRef.current && !cpaMenuRef.current.contains(event.target)) {
-        setShowCpaMenu(false)
-      }
       if (clientMenuRef.current && !clientMenuRef.current.contains(event.target)) {
         setShowClientMenu(false)
+      }
+      if (cpaSearchMenuRef.current && !cpaSearchMenuRef.current.contains(event.target)) {
+        setShowCpaSearchMenu(false)
       }
     }
     document.addEventListener("mousedown", handleClickOutside)
@@ -98,59 +90,6 @@ export default function ServicesDashboard() {
     if (!error && data) {
       setCpaDatabase(data)
     }
-  }
-
-  // --- GESTIONE CRUD TABELLA cpaCodes ---
-  async function handleSaveCpaCode(e) {
-    e.preventDefault()
-    if (!newCpaCode.trim() || !newCpaDesc.trim()) {
-      alert('Inserisci sia il codice che la descrizione.')
-      return
-    }
-
-    const payload = { code: newCpaCode.trim(), description: newCpaDesc.trim() }
-
-    if (editingCpaCodeOriginal) {
-      if (editingCpaCodeOriginal !== payload.code) {
-        await supabaseClient.from('cpacodes').delete().eq('code', editingCpaCodeOriginal)
-      }
-      const { error } = await supabaseClient.from('cpacodes').upsert([payload])
-      if (error) {
-        alert("Errore nell'aggiornamento: " + error.message)
-        return
-      }
-    } else {
-      const { error } = await supabaseClient.from('cpacodes').insert([payload])
-      if (error) {
-        alert("Errore nell'inserimento (forse il codice esiste già?): " + error.message)
-        return
-      }
-    }
-
-    setIsCpaAddModalOpen(false)
-    setEditingCpaCodeOriginal(null)
-    setNewCpaCode('')
-    setNewCpaDesc('')
-    loadCpaCodes()
-  }
-
-  async function handleDeleteCpaCode(code) {
-    if (confirm(`Sei sicuro di voler eliminare il codice CPA ${code}?`)) {
-      const { error } = await supabaseClient.from('cpacodes').delete().eq('code', code)
-      if (error) {
-        alert("Errore durante l'eliminazione: " + error.message)
-      } else {
-        loadCpaCodes()
-      }
-    }
-  }
-
-  function openEditCpaModal(item) {
-    setEditingCpaCodeOriginal(item.code)
-    setNewCpaCode(item.code)
-    setNewCpaDesc(item.description)
-    setIsCpaManageModalOpen(false)
-    setIsCpaAddModalOpen(true)
   }
 
   // --- GESTIONE SERVIZI ---
@@ -247,23 +186,34 @@ export default function ServicesDashboard() {
     item.description.toLowerCase().includes(cpaSearchQuery.toLowerCase())
   )
 
-  const filteredManageCpaList = cpaDatabase.filter(item =>
-    item.code.toLowerCase().includes(cpaFilterText.toLowerCase()) ||
-    item.description.toLowerCase().includes(cpaFilterText.toLowerCase())
+  // Filtro per il menu a tendina "Ricerca" CPA
+  const filteredCpaSearchMenu = cpaDatabase.filter(item =>
+    item.code.toLowerCase().includes(cpaMenuSearchQuery.toLowerCase()) ||
+    item.description.toLowerCase().includes(cpaMenuSearchQuery.toLowerCase())
   )
 
-  // Filtro dei servizi in base al cliente selezionato
-  const displayedServices = selectedClientId === 'ALL' 
+  // --- FILTRAGGIO GLOBALE SERVIZI ---
+  // 1. Filtro per Cliente
+  let displayedServices = selectedClientId === 'ALL' 
     ? servicesList 
     : servicesList.filter(s => s.clientid === selectedClientId)
 
-  // Separazione in Vendite (isvendor = false) e Acquisti (isvendor = true)
+  // 2. Filtro per Codice CPA (Ricerca)
+  if (selectedCpaFilter !== 'ALL') {
+    displayedServices = displayedServices.filter(s => s.cpacode === selectedCpaFilter)
+  }
+
+  // Separazione in Vendite e Acquisti
   const salesServices = displayedServices.filter(s => !s.isvendor)
   const purchaseServices = displayedServices.filter(s => s.isvendor)
 
   const currentSelectedClientName = selectedClientId === 'ALL' 
     ? 'Tutti i Clienti' 
     : clientsList.find(c => c.id === selectedClientId)?.name || 'Cliente'
+
+  const currentSelectedCpaName = selectedCpaFilter === 'ALL'
+    ? 'Tutti i Codici'
+    : selectedCpaFilter
 
   return (
     <>
@@ -275,16 +225,17 @@ export default function ServicesDashboard() {
       <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-4 sm:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
           
-          {/* Header Principale con menu Clienti e Codici */}
+          {/* Header Principale con menu Clienti e Ricerca CPA */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
             <div>
               <h1 className="text-3xl font-extrabold text-white tracking-tight">Gestione Servizi</h1>
               <p className="text-slate-400 text-sm mt-1">
-                Visualizzazione corrente: <span className="text-indigo-400 font-semibold">{currentSelectedClientName}</span>
+                Cliente: <span className="text-indigo-400 font-semibold">{currentSelectedClientName}</span> | Codice CPA: <span className="text-indigo-400 font-semibold">{currentSelectedCpaName}</span>
               </p>
             </div>
             
             <div className="flex flex-wrap items-center gap-3">
+              
               {/* Pulsante Menu a Scomparsa "Cliente" */}
               <div className="relative" ref={clientMenuRef}>
                 <button 
@@ -298,7 +249,7 @@ export default function ServicesDashboard() {
                   <div className="absolute right-0 mt-2 w-56 bg-slate-950 border border-slate-700 rounded-xl shadow-2xl py-2 z-50 max-h-60 overflow-y-auto">
                     <button 
                       onClick={() => { setSelectedClientId('ALL'); setShowClientMenu(false); }}
-                      className="w-full text-left px-4 py-2 text-xs text-indigo-400 font-bold hover:bg-indigo-600/30 transition-colors border-b border-slate-800"
+                      className="w-full text-left px-4 py-2 text-xs text-indigo-400 font-bold hover:bg-indigo-600/35 transition-colors border-b border-slate-800"
                     >
                       🌐 Mostra Tutti i Clienti
                     </button>
@@ -316,39 +267,47 @@ export default function ServicesDashboard() {
                 )}
               </div>
 
-              {/* Menu a scomparsa Codici CPA */}
-              <div className="relative" ref={cpaMenuRef}>
+              {/* Pulsante Menu a Scomparsa "Ricerca" Codice CPA */}
+              <div className="relative" ref={cpaSearchMenuRef}>
                 <button 
-                  onClick={() => setShowCpaMenu(!showCpaMenu)}
+                  onClick={() => setShowCpaSearchMenu(!showCpaSearchMenu)}
                   className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2.5 rounded-xl font-semibold border border-slate-600 transition-all text-sm"
                 >
-                  📁 Codici CPA ▾
+                  🔍 Ricerca CPA: {selectedCpaFilter === 'ALL' ? 'Tutti ▾' : `${selectedCpaFilter} ▾`}
                 </button>
 
-                {showCpaMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-slate-950 border border-slate-700 rounded-xl shadow-2xl py-2 z-50">
+                {showCpaSearchMenu && (
+                  <div className="absolute right-0 mt-2 w-80 bg-slate-950 border border-slate-700 rounded-xl shadow-2xl p-3 z-50 space-y-2">
                     <button 
-                      onClick={() => {
-                        setShowCpaMenu(false)
-                        setEditingCpaCodeOriginal(null)
-                        setNewCpaCode('')
-                        setNewCpaDesc('')
-                        setIsCpaAddModalOpen(true)
-                      }}
-                      className="w-full text-left px-4 py-2.5 text-xs text-slate-200 hover:bg-indigo-600/30 transition-colors flex items-center gap-2"
+                      onClick={() => { setSelectedCpaFilter('ALL'); setShowCpaSearchMenu(false); }}
+                      className="w-full text-left px-3 py-2 text-xs text-indigo-400 font-bold hover:bg-indigo-600/35 rounded-lg transition-colors border-b border-slate-800 mb-1"
                     >
-                      ➕ Aggiungi Codice
+                      🌐 Mostra Tutti i Codici CPA
                     </button>
-                    <button 
-                      onClick={() => {
-                        setShowCpaMenu(false)
-                        setCpaFilterText('')
-                        setIsCpaManageModalOpen(true)
-                      }}
-                      className="w-full text-left px-4 py-2.5 text-xs text-slate-200 hover:bg-indigo-600/30 transition-colors flex items-center gap-2"
-                    >
-                      ✏️ Modifica / Gestisci Codici
-                    </button>
+                    
+                    <input 
+                      type="text" 
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-xs outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                      placeholder="Cerca codice o descrizione..."
+                      value={cpaMenuSearchQuery}
+                      onChange={(e) => setCpaMenuSearchQuery(e.target.value)}
+                    />
+
+                    <div className="max-h-56 overflow-y-auto space-y-1">
+                      {filteredCpaSearchMenu.map(item => (
+                        <div 
+                          key={item.code}
+                          onClick={() => { setSelectedCpaFilter(item.code); setShowCpaSearchMenu(false); }}
+                          className="p-2 hover:bg-indigo-600/40 cursor-pointer text-xs rounded transition-colors"
+                        >
+                          <span className="font-bold text-indigo-400 font-mono mr-2">{item.code}</span>
+                          <span className="text-slate-300 line-clamp-1">{item.description}</span>
+                        </div>
+                      ))}
+                      {filteredCpaSearchMenu.length === 0 && (
+                        <div className="p-2 text-xs text-slate-500 italic text-center">Nessun codice trovato.</div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -366,7 +325,7 @@ export default function ServicesDashboard() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-emerald-400 flex items-center gap-2">
-                🟢 Vendite <span className="text-xs bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-0.5 rounded-full text-emerald-300">Il cliente è fornitore</span>
+                🟢 Vendite <span className="text-xs bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-0.5 rounded-full text-emerald-300">Il cliente è acquirente</span>
               </h2>
               <span className="text-xs text-slate-400">Totale: {salesServices.length}</span>
             </div>
@@ -421,7 +380,7 @@ export default function ServicesDashboard() {
                     {salesServices.length === 0 && (
                       <tr>
                         <td colSpan="6" className="py-8 text-center text-slate-500 font-medium text-xs">
-                          Nessun servizio in vendita trovato per la selezione corrente.
+                          Nessun servizio in vendita trovato per i filtri correnti.
                         </td>
                       </tr>
                     )}
@@ -435,7 +394,7 @@ export default function ServicesDashboard() {
           <div className="space-y-3 pt-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-amber-400 flex items-center gap-2">
-                🟠 Acquisti <span className="text-xs bg-amber-500/20 border border-amber-500/30 px-2.5 py-0.5 rounded-full text-amber-300">Il cliente è acquirente</span>
+                🟠 Acquisti <span className="text-xs bg-amber-500/20 border border-amber-500/30 px-2.5 py-0.5 rounded-full text-amber-300">Il cliente è fornitore</span>
               </h2>
               <span className="text-xs text-slate-400">Totale: {purchaseServices.length}</span>
             </div>
@@ -490,7 +449,7 @@ export default function ServicesDashboard() {
                     {purchaseServices.length === 0 && (
                       <tr>
                         <td colSpan="6" className="py-8 text-center text-slate-500 font-medium text-xs">
-                          Nessun servizio in acquisto trovato per la selezione corrente.
+                          Nessun servizio in acquisto trovato per i filtri correnti.
                         </td>
                       </tr>
                     )}
@@ -650,132 +609,6 @@ export default function ServicesDashboard() {
                 </div>
 
               </form>
-            </div>
-          </div>
-        )}
-
-        {/* Modal Aggiungi / Modifica Singolo Codice CPA */}
-        {isCpaAddModalOpen && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-6">
-              <div className="flex justify-between items-center border-b border-slate-700 pb-4">
-                <h2 className="text-xl font-bold text-white">
-                  {editingCpaCodeOriginal ? 'Modifica Codice CPA' : 'Aggiungi Nuovo Codice CPA'}
-                </h2>
-                <button onClick={() => setIsCpaAddModalOpen(false)} className="text-slate-400 hover:text-white">✕</button>
-              </div>
-
-              <form onSubmit={handleSaveCpaCode} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Codice CPA *</label>
-                  <input 
-                    type="text"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-mono"
-                    value={newCpaCode}
-                    onChange={(e) => setNewCpaCode(e.target.value)}
-                    placeholder="Es. 62.01.11"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Descrizione Attività *</label>
-                  <textarea 
-                    rows="3"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                    value={newCpaDesc}
-                    onChange={(e) => setNewCpaDesc(e.target.value)}
-                    placeholder="Descrizione ufficiale del codice CPA..."
-                    required
-                  />
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
-                  <button 
-                    type="button" 
-                    onClick={() => setIsCpaAddModalOpen(false)}
-                    className="px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-700 font-medium transition-colors text-sm"
-                  >
-                    Annulla
-                  </button>
-                  <button 
-                    type="submit" 
-                    className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-600/30 transition-all text-sm"
-                  >
-                    Salva Codice
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Modal Gestione/Modifica Elenco Codici CPA */}
-        {isCpaManageModalOpen && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-3xl w-full shadow-2xl space-y-6 max-h-[85vh] flex flex-col">
-              <div className="flex justify-between items-center border-b border-slate-700 pb-4">
-                <h2 className="text-xl font-bold text-white">Gestione Tabella Codici CPA</h2>
-                <button onClick={() => setIsCpaManageModalOpen(false)} className="text-slate-400 hover:text-white">✕</button>
-              </div>
-
-              <div>
-                <input 
-                  type="text" 
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                  placeholder="Filtra codici o descrizioni..."
-                  value={cpaFilterText}
-                  onChange={(e) => setCpaFilterText(e.target.value)}
-                />
-              </div>
-
-              <div className="overflow-y-auto flex-1 border border-slate-700 rounded-xl">
-                <table className="w-full text-left border-collapse">
-                  <thead className="bg-slate-950/70 text-slate-400 text-xs uppercase sticky top-0">
-                    <tr>
-                      <th className="p-3">Codice</th>
-                      <th className="p-3">Descrizione</th>
-                      <th className="p-3 text-right">Azioni</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-700/50 text-xs">
-                    {filteredManageCpaList.map((item) => (
-                      <tr key={item.code} className="hover:bg-slate-700/30">
-                        <td className="p-3 font-mono text-indigo-400 font-bold">{item.code}</td>
-                        <td className="p-3 text-slate-300">{item.description}</td>
-                        <td className="p-3 text-right space-x-2">
-                          <button 
-                            onClick={() => openEditCpaModal(item)}
-                            className="bg-slate-700 hover:bg-amber-600 text-amber-300 hover:text-white px-2.5 py-1 rounded font-medium"
-                          >
-                            Modifica
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteCpaCode(item.code)}
-                            className="bg-slate-700 hover:bg-rose-600 text-rose-300 hover:text-white px-2.5 py-1 rounded font-medium"
-                          >
-                            Elimina
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {filteredManageCpaList.length === 0 && (
-                      <tr>
-                        <td colSpan="3" className="p-6 text-center text-slate-500">Nessun codice trovato.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="flex justify-end pt-2 border-t border-slate-700">
-                <button 
-                  onClick={() => setIsCpaManageModalOpen(false)}
-                  className="px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-700 font-medium text-sm"
-                >
-                  Chiudi
-                </button>
-              </div>
             </div>
           </div>
         )}
