@@ -576,7 +576,7 @@ async function loadCpaCodes() {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                    Descrizione Servizio (min. 50 caratteri) * [{serviceDescription.length}/50]
+                    Descrizione Servizio *
                   </label>
                   <textarea 
                     rows="3"
@@ -586,9 +586,6 @@ async function loadCpaCodes() {
                     placeholder="Inserisci una descrizione dettagliata del servizio offerto o ricevuto..."
                     required
                   />
-                  {serviceDescription.length > 0 && serviceDescription.length < 50 && (
-                    <p className="text-rose-400 text-xs mt-1">Mancano ancora {50 - serviceDescription.length} caratteri.</p>
-                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
