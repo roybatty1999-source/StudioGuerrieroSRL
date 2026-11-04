@@ -39,7 +39,7 @@ export default function InvoiceDashboard() {
   // Stati per la finestra e i filtri di Controllo
   const [controlModalOpen, setControlModalOpen] = useState(false)
   const [controlYear, setControlYear] = useState('2026')
-  const [controlMonth, setControlMonth] = useState('10')
+  const [controlMonth, setControlMonth] = useState('02')
   
   // Stati Modale Inserimento/Modifica Fattura
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -1092,10 +1092,10 @@ export default function InvoiceDashboard() {
                 </div>
               </div>
 
-              {/* Tabella Fatture filtrate nel Controllo */}
+              {/* Tabella Fatture filtrate nel Controllo (rimosso 'sticky top-0' per evitare sovrapposizioni) */}
               <div className="overflow-y-auto flex-1 border border-slate-700 rounded-xl">
                 <table className="w-full text-left border-collapse">
-                  <thead className="bg-slate-950/70 text-slate-400 text-xs uppercase sticky top-0">
+                  <thead className="bg-slate-950/90 text-slate-400 text-xs uppercase">
                     <tr>
                       <th className="p-3">Data</th>
                       <th className="p-3">N° Fattura</th>
@@ -1114,7 +1114,6 @@ export default function InvoiceDashboard() {
                         <tr key={item.id} className="hover:bg-slate-700/30">
                           <td className="p-3 text-slate-300">{formatDateToIT(item.issuedate)}</td>
                           <td className="p-3 font-bold text-indigo-400">{displayNum}</td>
-                          {/* CORRETTO: Usa item.clients?.name per visualizzare il nome reale del cliente */}
                           <td className="p-3 font-medium text-white">{item.clients?.name || 'Cliente non specificato'}</td>
                           <td className="p-3 text-right font-mono text-slate-200">€ {(Number(item.taxableamount) || 0).toFixed(2)}</td>
                           <td className="p-3 text-right font-mono text-slate-200">€ {(Number(item.vatamount) || 0).toFixed(2)}</td>
