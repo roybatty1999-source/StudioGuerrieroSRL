@@ -104,12 +104,11 @@ export default function ServicesDashboard() {
   }
 
   // --- GESTIONE SERVIZI ---
-  function openInsertModal() {
+ function openInsertModal() {
     setIsEditMode(false)
     setCurrentServiceId(null)
-    const firstClient = clientsList[0] || {}
-    setClientId(firstClient.id || '')
-    setFormClientSearch(firstClient.name || '')
+    setClientId('')
+    setFormClientSearch('')
     setShowFormClientDropdown(false)
     setThirdPartyName('')
     setIsVendor(false)
@@ -525,45 +524,43 @@ export default function ServicesDashboard() {
                 
                 <div className="grid grid-cols-2 gap-4">
                   
-                  {/* Selezione Cliente con Autocomplete nella Modale */}
-                  <div className="relative" ref={formClientRef}>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Cliente *</label>
-                    <input 
-                      type="text"
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                      value={formClientSearch}
-                      onChange={(e) => {
-                        setFormClientSearch(e.target.value)
-                        setShowFormClientDropdown(true)
-                        setClientId('')
-                      }}
-                      onFocus={() => setShowFormClientDropdown(true)}
-                      placeholder="Cerca cliente..."
-                      required
-                    />
+{/* Selezione Cliente con Autocomplete nella Modale */}
+  <div className="relative" ref={formClientRef}>
+    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Cliente *</label>
+    <input 
+      type="text"
+      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+      value={formClientSearch}
+      onChange={(e) => {
+        setFormClientSearch(e.target.value)
+        setShowFormClientDropdown(true)
+        setClientId('')
+      }}
+      onFocus={() => setShowFormClientDropdown(true)}
+      placeholder="Cerca e seleziona cliente..."
+    />
 
-                    {showFormClientDropdown && (
-                      <div className="absolute left-0 right-0 top-full mt-1 bg-slate-950 border border-slate-600 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-[100] divide-y divide-slate-800">
-                        {filteredFormClientsList.map(c => (
-                          <div 
-                            key={c.id}
-                            onClick={() => {
-                              setClientId(c.id)
-                              setFormClientSearch(c.name)
-                              setShowFormClientDropdown(false)
-                            }}
-                            className="p-3 hover:bg-indigo-600/40 cursor-pointer text-xs text-slate-200 transition-colors"
-                          >
-                            {c.name}
-                          </div>
-                        ))}
-                        {filteredFormClientsList.length === 0 && (
-                          <div className="p-3 text-xs text-slate-400 italic">Nessun cliente trovato.</div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
+    {showFormClientDropdown && (
+      <div className="absolute left-0 right-0 top-full mt-1 bg-slate-950 border border-slate-600 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-[100] divide-y divide-slate-800">
+        {filteredFormClientsList.map(c => (
+          <div 
+            key={c.id}
+            onClick={() => {
+              setClientId(c.id)
+              setFormClientSearch(c.name)
+              setShowFormClientDropdown(false)
+            }}
+            className="p-3 hover:bg-indigo-600/40 cursor-pointer text-xs text-slate-200 transition-colors"
+          >
+            {c.name}
+          </div>
+        ))}
+        {filteredFormClientsList.length === 0 && (
+          <div className="p-3 text-xs text-slate-400 italic">Nessun cliente trovato.</div>
+        )}
+      </div>
+    )}
+  </div>
                   <div>
                     <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Cliente/Fornitore *</label>
                     <input 
