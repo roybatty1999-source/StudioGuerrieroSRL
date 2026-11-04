@@ -325,7 +325,7 @@ export default function ServicesDashboard() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-emerald-400 flex items-center gap-2">
-                🟢 Vendite <span className="text-xs bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-0.5 rounded-full text-emerald-300">Il cliente è acquirente</span>
+                🟢 Vendite <span className="text-xs bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-0.5 rounded-full text-emerald-300">Il cliente è fornitore</span>
               </h2>
               <span className="text-xs text-slate-400">Totale: {salesServices.length}</span>
             </div>
@@ -398,7 +398,7 @@ export default function ServicesDashboard() {
           <div className="space-y-3 pt-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-amber-400 flex items-center gap-2">
-                🟠 Acquisti <span className="text-xs bg-amber-500/20 border border-amber-500/30 px-2.5 py-0.5 rounded-full text-amber-300">Il cliente è fornitore</span>
+                🟠 Acquisti <span className="text-xs bg-amber-500/20 border border-amber-500/30 px-2.5 py-0.5 rounded-full text-amber-300">Il cliente è acquirente</span>
               </h2>
               <span className="text-xs text-slate-400">Totale: {purchaseServices.length}</span>
             </div>
