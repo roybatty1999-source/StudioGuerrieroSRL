@@ -70,6 +70,26 @@ export default function ServicesDashboard() {
     }
   }
 
+  async function loadCpaCodes() {
+  try {
+    // Tentativo di chiamata alle API SDMX / Endpoint interno sincronizzato
+    const response = await fetch('/api/cpa')
+    const result = await response.json()
+    
+    // Caricamento dei codici dalla tabella Supabase (popolata tramite lo script precedente)
+    const { data, error } = await supabaseClient
+      .from('cpacodes')
+      .select('code, description')
+      .order('code', { ascending: true })
+
+    if (!error && data) {
+      setCpaDatabase(data)
+    }
+  } catch (error) {
+    console.error("Errore di sincronizzazione SDMX:", error)
+  }
+}
+  
   async function loadServices() {
     const { data, error } = await supabaseClient
       .from('services')
