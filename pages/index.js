@@ -40,6 +40,7 @@ export default function InvoiceDashboard() {
   const [controlModalOpen, setControlModalOpen] = useState(false)
   const [controlYear, setControlYear] = useState('2026')
   const [controlMonth, setControlMonth] = useState('02')
+  const [controlStatusFilter, setControlStatusFilter] = useState('ALL') // Nuovo filtro stato per il Controllo
   
   // Stati Modale Inserimento/Modifica Fattura
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -104,8 +105,8 @@ export default function InvoiceDashboard() {
     return true
   })
 
-  // Filtraggio per la modale di Controllo (Anno e Mese)
-  const controlFilteredInvoices = allInvoicesList.filter(invoiceItem => {
+  // Filtraggio di base per Anno e Mese nella modale di Controllo
+  const controlBaseFilteredInvoices = allInvoicesList.filter(invoiceItem => {
     if (!invoiceItem.issuedate) return false
     const invoiceDateObj = new Date(invoiceItem.issuedate)
     const invoiceYearStr = invoiceDateObj.getFullYear().toString()
@@ -117,7 +118,14 @@ export default function InvoiceDashboard() {
     return matchesYear && matchesMonth
   })
 
-  // Calcoli per i totali della modale di Controllo
+  // Applicazione ulteriore del filtro stato (Tutte, Pagate, Non Pagate) per la tabella in Controllo
+  const controlFilteredInvoices = controlBaseFilteredInvoices.filter(item => {
+    if (controlStatusFilter === 'PAID') return item.paymentdate != null
+    if (controlStatusFilter === 'UNPAID') return item.paymentdate == null
+    return true
+  })
+
+  // Calcoli per i totali della modale di Controllo (basati sulla selezione corrente)
   const controlTotalTaxable = controlFilteredInvoices.reduce((sum, item) => sum + (Number(item.taxableamount) || 0), 0)
   const controlTotalVat = controlFilteredInvoices.reduce((sum, item) => sum + (Number(item.vatamount) || 0), 0)
   const controlTotalCollection = controlFilteredInvoices.reduce((sum, item) => sum + (Number(item.totalamount) || 0), 0)
@@ -1050,28 +1058,28 @@ export default function InvoiceDashboard() {
         {/* Finestra Modale "Controllo" per Anno e Mese */}
         {controlModalOpen && (
           <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-5xl w-full shadow-2xl space-y-6 flex flex-col max-h-[90vh]">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 sm:p-6 max-w-5xl w-full shadow-2xl space-y-4 flex flex-col max-h-[92vh]">
               
-              <div className="flex justify-between items-center border-b border-slate-700 pb-4">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <div className="flex justify-between items-center border-b border-slate-700 pb-3">
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
                   📊 Controllo Fatture per Anno e Mese
                 </h2>
                 <button 
                   onClick={() => setControlModalOpen(false)} 
-                  className="text-slate-400 hover:text-white text-lg font-bold"
+                  className="text-slate-400 hover:text-white text-base font-bold"
                 >
                   ✕
                 </button>
               </div>
 
-              {/* Selettori Anno e Mese per il Controllo */}
-              <div className="flex flex-wrap gap-4 items-center bg-slate-900 p-4 rounded-xl border border-slate-700">
+              {/* Selettori Anno, Mese e Stato per il Controllo */}
+              <div className="flex flex-wrap gap-3 items-center bg-slate-900 p-3 rounded-xl border border-slate-700 shrink-0">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Anno</label>
+                  <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Anno</label>
                   <select
                     value={controlYear}
                     onChange={(e) => setControlYear(e.target.value)}
-                    className="bg-slate-800 text-white px-4 py-2 rounded-lg border border-slate-600 text-sm outline-none"
+                    className="bg-slate-800 text-white px-3 py-1.5 rounded-lg border border-slate-600 text-xs outline-none"
                   >
                     <option value="ALL">Tutti gli anni</option>
                     <option value="2026">2026</option>
@@ -1081,11 +1089,11 @@ export default function InvoiceDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Mese</label>
+                  <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Mese</label>
                   <select
                     value={controlMonth}
                     onChange={(e) => setControlMonth(e.target.value)}
-                    className="bg-slate-800 text-white px-4 py-2 rounded-lg border border-slate-600 text-sm outline-none"
+                    className="bg-slate-800 text-white px-3 py-1.5 rounded-lg border border-slate-600 text-xs outline-none"
                   >
                     <option value="ALL">Tutti i mesi</option>
                     <option value="01">Gennaio</option>
@@ -1102,19 +1110,33 @@ export default function InvoiceDashboard() {
                     <option value="12">Dicembre</option>
                   </select>
                 </div>
+
+                {/* Nuovo Filtro Stato all'interno della modale di Controllo */}
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Visualizzazione</label>
+                  <select
+                    value={controlStatusFilter}
+                    onChange={(e) => setControlStatusFilter(e.target.value)}
+                    className="bg-slate-800 text-white px-3 py-1.5 rounded-lg border border-slate-600 text-xs outline-none"
+                  >
+                    <option value="ALL">💳 Tutte le fatture</option>
+                    <option value="PAID">🟢 Solo Pagate</option>
+                    <option value="UNPAID">🔴 Solo Non Pagate</option>
+                  </select>
+                </div>
               </div>
 
-              {/* Tabella Fatture filtrate nel Controllo con intestazione sticky e sfondo solido */}
-              <div className="overflow-y-auto flex-1 border border-slate-700 rounded-xl relative">
+              {/* Tabella Fatture filtrate nel Controllo */}
+              <div className="overflow-y-auto flex-1 border border-slate-700 rounded-xl relative min-h-[220px]">
                 <table className="w-full text-left border-collapse">
-                  <thead className="sticky top-0 bg-slate-900 text-slate-300 text-xs uppercase z-10 shadow-md">
+                  <thead className="sticky top-0 bg-slate-900 text-slate-300 text-[11px] uppercase z-10 shadow-md">
                     <tr>
-                      <th className="p-3">Data</th>
-                      <th className="p-3">N° Fattura</th>
-                      <th className="p-3">Cliente</th>
-                      <th className="p-3 text-right">Imponibile</th>
-                      <th className="p-3 text-right">IVA</th>
-                      <th className="p-3 text-right">Incasso</th>
+                      <th className="py-2.5 px-3">Data</th>
+                      <th className="py-2.5 px-3">N° Fattura</th>
+                      <th className="py-2.5 px-3">Cliente</th>
+                      <th className="py-2.5 px-3 text-right">Imponibile</th>
+                      <th className="py-2.5 px-3 text-right">IVA</th>
+                      <th className="py-2.5 px-3 text-right">Incasso</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/50 text-xs">
@@ -1124,18 +1146,18 @@ export default function InvoiceDashboard() {
                       
                       return (
                         <tr key={item.id} className="hover:bg-slate-700/30">
-                          <td className="p-3 text-slate-300">{formatDateToIT(item.issuedate)}</td>
-                          <td className="p-3 font-bold text-indigo-400">{displayNum}</td>
-                          <td className="p-3 font-medium text-white">{item.clients?.name || 'Cliente non specificato'}</td>
-                          <td className="p-3 text-right font-mono text-slate-200">€ {(Number(item.taxableamount) || 0).toFixed(2)}</td>
-                          <td className="p-3 text-right font-mono text-slate-200">€ {(Number(item.vatamount) || 0).toFixed(2)}</td>
-                          <td className="p-3 text-right font-mono text-emerald-400 font-bold">€ {(Number(item.totalamount) || 0).toFixed(2)}</td>
+                          <td className="py-2 px-3 text-slate-300">{formatDateToIT(item.issuedate)}</td>
+                          <td className="py-2 px-3 font-bold text-indigo-400">{displayNum}</td>
+                          <td className="py-2 px-3 font-medium text-white">{item.clients?.name || 'Cliente non specificato'}</td>
+                          <td className="py-2 px-3 text-right font-mono text-slate-200">€ {(Number(item.taxableamount) || 0).toFixed(2)}</td>
+                          <td className="py-2 px-3 text-right font-mono text-slate-200">€ {(Number(item.vatamount) || 0).toFixed(2)}</td>
+                          <td className="py-2 px-3 text-right font-mono text-emerald-400 font-bold">€ {(Number(item.totalamount) || 0).toFixed(2)}</td>
                         </tr>
                       )
                     })}
                     {controlFilteredInvoices.length === 0 && (
                       <tr>
-                        <td colSpan="6" className="p-8 text-center text-slate-500 italic">
+                        <td colSpan="6" className="py-6 text-center text-slate-500 italic text-xs">
                           Nessuna fattura trovata per il periodo selezionato.
                         </td>
                       </tr>
@@ -1144,76 +1166,76 @@ export default function InvoiceDashboard() {
                 </table>
               </div>
 
-              {/* Sezione Totali in basso, con riga generale, riga pagate e riga non pagate */}
-              <div className="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-3">
+              {/* Sezione Totali in basso a ridotto ingombro */}
+              <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-700 space-y-1.5 shrink-0">
                 
                 {/* 1. Totale Complessivo */}
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-center">
-                  <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
-                    <span className="block text-xs font-semibold text-slate-400 uppercase">N. Fatture</span>
-                    <span className="text-lg font-bold font-mono text-white">{controlFilteredInvoices.length}</span>
+                <div className="grid grid-cols-4 gap-2 text-center">
+                  <div className="bg-slate-800 p-1.5 rounded border border-slate-700">
+                    <span className="block text-[9px] font-semibold text-slate-400 uppercase">N. Fatture</span>
+                    <span className="text-xs font-bold font-mono text-white">{controlFilteredInvoices.length}</span>
                   </div>
-                  <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
-                    <span className="block text-xs font-semibold text-slate-400 uppercase">Totale Imponibile</span>
-                    <span className="text-lg font-bold font-mono text-indigo-400">€ {controlTotalTaxable.toFixed(2)}</span>
+                  <div className="bg-slate-800 p-1.5 rounded border border-slate-700">
+                    <span className="block text-[9px] font-semibold text-slate-400 uppercase">Tot. Imponibile</span>
+                    <span className="text-xs font-bold font-mono text-indigo-400">€ {controlTotalTaxable.toFixed(2)}</span>
                   </div>
-                  <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
-                    <span className="block text-xs font-semibold text-slate-400 uppercase">Totale IVA</span>
-                    <span className="text-lg font-bold font-mono text-amber-400">€ {controlTotalVat.toFixed(2)}</span>
+                  <div className="bg-slate-800 p-1.5 rounded border border-slate-700">
+                    <span className="block text-[9px] font-semibold text-slate-400 uppercase">Tot. IVA</span>
+                    <span className="text-xs font-bold font-mono text-amber-400">€ {controlTotalVat.toFixed(2)}</span>
                   </div>
-                  <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
-                    <span className="block text-xs font-semibold text-slate-400 uppercase">Totale Incasso</span>
-                    <span className="text-lg font-bold font-mono text-emerald-400">€ {controlTotalCollection.toFixed(2)}</span>
+                  <div className="bg-slate-800 p-1.5 rounded border border-slate-700">
+                    <span className="block text-[9px] font-semibold text-slate-400 uppercase">Tot. Incasso</span>
+                    <span className="text-xs font-bold font-mono text-emerald-400">€ {controlTotalCollection.toFixed(2)}</span>
                   </div>
                 </div>
 
                 {/* 2. Totale Fatture Pagate */}
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-center border-t border-slate-800 pt-3">
-                  <div className="bg-slate-800/60 p-2.5 rounded-lg border border-emerald-500/20">
-                    <span className="block text-[10px] font-semibold text-emerald-400 uppercase">🟢 Pagate (N.)</span>
-                    <span className="text-base font-bold font-mono text-white">{controlPaidInvoices.length}</span>
+                <div className="grid grid-cols-4 gap-2 text-center border-t border-slate-800/80 pt-1.5">
+                  <div className="bg-slate-800/60 p-1 rounded border border-emerald-500/20">
+                    <span className="block text-[9px] font-semibold text-emerald-400 uppercase">🟢 Pagate (N.)</span>
+                    <span className="text-xs font-bold font-mono text-white">{controlPaidInvoices.length}</span>
                   </div>
-                  <div className="bg-slate-800/60 p-2.5 rounded-lg border border-emerald-500/20">
-                    <span className="block text-[10px] font-semibold text-emerald-400 uppercase">Imponibile Pagato</span>
-                    <span className="text-base font-bold font-mono text-indigo-300">€ {controlPaidTaxable.toFixed(2)}</span>
+                  <div className="bg-slate-800/60 p-1 rounded border border-emerald-500/20">
+                    <span className="block text-[9px] font-semibold text-emerald-400 uppercase">Imponibile Pagato</span>
+                    <span className="text-xs font-bold font-mono text-indigo-300">€ {controlPaidTaxable.toFixed(2)}</span>
                   </div>
-                  <div className="bg-slate-800/60 p-2.5 rounded-lg border border-emerald-500/20">
-                    <span className="block text-[10px] font-semibold text-emerald-400 uppercase">IVA Pagata</span>
-                    <span className="text-base font-bold font-mono text-amber-300">€ {controlPaidVat.toFixed(2)}</span>
+                  <div className="bg-slate-800/60 p-1 rounded border border-emerald-500/20">
+                    <span className="block text-[9px] font-semibold text-emerald-400 uppercase">IVA Pagata</span>
+                    <span className="text-xs font-bold font-mono text-amber-300">€ {controlPaidVat.toFixed(2)}</span>
                   </div>
-                  <div className="bg-slate-800/60 p-2.5 rounded-lg border border-emerald-500/20">
-                    <span className="block text-[10px] font-semibold text-emerald-400 uppercase">Incasso Pagato</span>
-                    <span className="text-base font-bold font-mono text-emerald-400">€ {controlPaidCollection.toFixed(2)}</span>
+                  <div className="bg-slate-800/60 p-1 rounded border border-emerald-500/20">
+                    <span className="block text-[9px] font-semibold text-emerald-400 uppercase">Incasso Pagato</span>
+                    <span className="text-xs font-bold font-mono text-emerald-400">€ {controlPaidCollection.toFixed(2)}</span>
                   </div>
                 </div>
 
                 {/* 3. Totale Fatture Non Pagate */}
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-center border-t border-slate-800 pt-3">
-                  <div className="bg-slate-800/60 p-2.5 rounded-lg border border-rose-500/20">
-                    <span className="block text-[10px] font-semibold text-rose-400 uppercase">🔴 Non Pagate (N.)</span>
-                    <span className="text-base font-bold font-mono text-white">{controlUnpaidInvoices.length}</span>
+                <div className="grid grid-cols-4 gap-2 text-center border-t border-slate-800/80 pt-1.5">
+                  <div className="bg-slate-800/60 p-1 rounded border border-rose-500/20">
+                    <span className="block text-[9px] font-semibold text-rose-400 uppercase">🔴 Non Pagate (N.)</span>
+                    <span className="text-xs font-bold font-mono text-white">{controlUnpaidInvoices.length}</span>
                   </div>
-                  <div className="bg-slate-800/60 p-2.5 rounded-lg border border-rose-500/20">
-                    <span className="block text-[10px] font-semibold text-rose-400 uppercase">Imponibile Da Incassare</span>
-                    <span className="text-base font-bold font-mono text-indigo-300">€ {controlUnpaidTaxable.toFixed(2)}</span>
+                  <div className="bg-slate-800/60 p-1 rounded border border-rose-500/20">
+                    <span className="block text-[9px] font-semibold text-rose-400 uppercase">Imp. Da Incassare</span>
+                    <span className="text-xs font-bold font-mono text-indigo-300">€ {controlUnpaidTaxable.toFixed(2)}</span>
                   </div>
-                  <div className="bg-slate-800/60 p-2.5 rounded-lg border border-rose-500/20">
-                    <span className="block text-[10px] font-semibold text-rose-400 uppercase">IVA Da Incassare</span>
-                    <span className="text-base font-bold font-mono text-amber-300">€ {controlUnpaidVat.toFixed(2)}</span>
+                  <div className="bg-slate-800/60 p-1 rounded border border-rose-500/20">
+                    <span className="block text-[9px] font-semibold text-rose-400 uppercase">IVA Da Incassare</span>
+                    <span className="text-xs font-bold font-mono text-amber-300">€ {controlUnpaidVat.toFixed(2)}</span>
                   </div>
-                  <div className="bg-slate-800/60 p-2.5 rounded-lg border border-rose-500/20">
-                    <span className="block text-[10px] font-semibold text-rose-400 uppercase">Totale Da Incassare</span>
-                    <span className="text-base font-bold font-mono text-rose-400">€ {controlUnpaidCollection.toFixed(2)}</span>
+                  <div className="bg-slate-800/60 p-1 rounded border border-rose-500/20">
+                    <span className="block text-[9px] font-semibold text-rose-400 uppercase">Tot. Da Incassare</span>
+                    <span className="text-xs font-bold font-mono text-rose-400">€ {controlUnpaidCollection.toFixed(2)}</span>
                   </div>
                 </div>
 
               </div>
 
               {/* Footer Chiusura */}
-              <div className="flex justify-end pt-2 border-t border-slate-700">
+              <div className="flex justify-end pt-1 border-t border-slate-700 shrink-0">
                 <button 
                   onClick={() => setControlModalOpen(false)}
-                  className="px-5 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-medium text-sm transition-colors"
+                  className="px-4 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-medium text-xs transition-colors"
                 >
                   Chiudi
                 </button>
@@ -1773,7 +1795,7 @@ export default function InvoiceDashboard() {
                             <th className="text-right">Imponibile €</th>
                             <th className="text-right">IVA €</th>
                             <th className="text-right">Incasso €</th>
-                            <th className="text-center">Data di Pagamento</th>
+                            <th className="ts-center">Data di Pagamento</th>
                           </tr>
                         </thead>
                         <tbody>
