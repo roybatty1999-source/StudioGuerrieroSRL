@@ -39,7 +39,7 @@ export default function InvoiceDashboard() {
   // Stati per la finestra e i filtri di Controllo
   const [controlModalOpen, setControlModalOpen] = useState(false)
   const [controlYear, setControlYear] = useState('2026')
-  const [controlMonth, setControlMonth] = useState('01')
+  const [controlMonth, setControlMonth] = useState('10')
   
   // Stati Modale Inserimento/Modifica Fattura
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -166,7 +166,7 @@ export default function InvoiceDashboard() {
     }
   }, [isProspectOpen, prospectClientId])
 
-  // Scarica TUTTE le fatture bypassando il limite dei 1000 record di Supabase tramite paginazione
+  // Scarica TUTTE le fatture includendo la relazione con i clienti tramite paginazione
   async function loadAllInvoicesForManagement() {
     let allData = []
     let page = 0
@@ -176,7 +176,7 @@ export default function InvoiceDashboard() {
     while (fetchMore) {
       const { data, error } = await supabaseClient
         .from('invoices')
-        .select('id, invoicenumber, clientid, issuedate, paymentdate, taxableamount, vatamount, totalamount, note')
+        .select('id, invoicenumber, clientid, issuedate, paymentdate, taxableamount, vatamount, totalamount, note, clients(name)')
         .order('issuedate', { ascending: true })
         .range(page * pageSize, (page + 1) * pageSize - 1)
 
@@ -933,7 +933,7 @@ export default function InvoiceDashboard() {
               </select>
             </div>
 
-            {/* 1. MODIFICA: Filtro Stato Pagamento a fianco dell'Anno */}
+            {/* Filtro Stato Pagamento a fianco dell'Anno */}
             <div className="w-full md:w-48">
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Stato Pagamento</label>
               <select 
@@ -947,7 +947,7 @@ export default function InvoiceDashboard() {
               </select>
             </div>
 
-            {/* 2. MODIFICA: Pulsante "Controllo" per la modale */}
+            {/* Pulsante "Controllo" per la modale */}
             <div>
               <button
                 onClick={() => setControlModalOpen(true)}
@@ -1035,7 +1035,7 @@ export default function InvoiceDashboard() {
 
         </div>
 
-        {/* 2. MODIFICA: Finestra Modale "Controllo" per Anno e Mese */}
+        {/* Finestra Modale "Controllo" per Anno e Mese */}
         {controlModalOpen && (
           <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
             <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-5xl w-full shadow-2xl space-y-6 flex flex-col max-h-[90vh]">
@@ -1109,11 +1109,13 @@ export default function InvoiceDashboard() {
                     {controlFilteredInvoices.map((item) => {
                       const yearFromDate = item.issuedate ? item.issuedate.substring(0, 4) : ''
                       const displayNum = item.invoicenumber && yearFromDate ? `${item.invoicenumber}/${yearFromDate}` : item.invoicenumber
+                      
                       return (
                         <tr key={item.id} className="hover:bg-slate-700/30">
                           <td className="p-3 text-slate-300">{formatDateToIT(item.issuedate)}</td>
                           <td className="p-3 font-bold text-indigo-400">{displayNum}</td>
-                          <td className="p-3 font-medium text-white">{item.clients?.name || 'Cliente'}</td>
+                          {/* CORRETTO: Usa item.clients?.name per visualizzare il nome reale del cliente */}
+                          <td className="p-3 font-medium text-white">{item.clients?.name || 'Cliente non specificato'}</td>
                           <td className="p-3 text-right font-mono text-slate-200">€ {(Number(item.taxableamount) || 0).toFixed(2)}</td>
                           <td className="p-3 text-right font-mono text-slate-200">€ {(Number(item.vatamount) || 0).toFixed(2)}</td>
                           <td className="p-3 text-right font-mono text-emerald-400 font-bold">€ {(Number(item.totalamount) || 0).toFixed(2)}</td>
