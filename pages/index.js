@@ -31,6 +31,16 @@ export default function InvoiceDashboard() {
   const [clientsList, setClientsList] = useState([])
   const [availableYears, setAvailableYears] = useState([])
   
+  // Stati Filtri Tabella Principale
+  const [filterClient, setFilterClient] = useState('')
+  const [filterYear, setFilterYear] = useState('2026')
+  const [paymentFilter, setPaymentFilter] = useState('ALL')
+
+  // Stati per la finestra e i filtri di Controllo
+  const [controlModalOpen, setControlModalOpen] = useState(false)
+  const [controlYear, setControlYear] = useState('2026')
+  const [controlMonth, setControlMonth] = useState('01')
+  
   // Stati Modale Inserimento/Modifica Fattura
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
@@ -77,10 +87,6 @@ export default function InvoiceDashboard() {
   const [paymentDate, setPaymentDate] = useState('')
   const [invoiceNotes, setInvoiceNotes] = useState('')
 
-  // Filtri di visualizzazione dashboard
-  const [filterClient, setFilterClient] = useState('')
-  const [filterYear, setFilterYear] = useState('2026')
-
   useEffect(() => {
     loadClients()
     loadYears()
@@ -90,6 +96,31 @@ export default function InvoiceDashboard() {
   useEffect(() => {
     loadInvoices()
   }, [filterClient, filterYear])
+
+  // Filtro aggiuntivo per lo stato di pagamento sulla lista principale a schermo
+  const displayedInvoices = invoicesList.filter(invoiceItem => {
+    if (paymentFilter === 'PAID') return invoiceItem.paymentdate != null
+    if (paymentFilter === 'UNPAID') return invoiceItem.paymentdate == null
+    return true
+  })
+
+  // Filtraggio per la modale di Controllo (Anno e Mese)
+  const controlFilteredInvoices = allInvoicesList.filter(invoiceItem => {
+    if (!invoiceItem.issuedate) return false
+    const invoiceDateObj = new Date(invoiceItem.issuedate)
+    const invoiceYearStr = invoiceDateObj.getFullYear().toString()
+    const invoiceMonthStr = (invoiceDateObj.getMonth() + 1).toString().padStart(2, '0')
+
+    const matchesYear = controlYear === 'ALL' || invoiceYearStr === controlYear
+    const matchesMonth = controlMonth === 'ALL' || invoiceMonthStr === controlMonth
+
+    return matchesYear && matchesMonth
+  })
+
+  // Calcoli per i totali della modale di Controllo
+  const controlTotalTaxable = controlFilteredInvoices.reduce((sum, item) => sum + (Number(item.taxableamount) || 0), 0)
+  const controlTotalVat = controlFilteredInvoices.reduce((sum, item) => sum + (Number(item.vatamount) || 0), 0)
+  const controlTotalCollection = controlFilteredInvoices.reduce((sum, item) => sum + (Number(item.totalamount) || 0), 0)
 
   // Gestione sicura del caricamento e renderizzazione del grafico nella modale Gestione
   useEffect(() => {
@@ -701,8 +732,8 @@ export default function InvoiceDashboard() {
               justify-content: space-between !important;
               align-items: flex-start !important;
               border-bottom: 3px solid #000000 !important;
-              padding-bottom: 8px !important;
-              margin-bottom: 12px !important;
+              padding-bottom: 8mm !important;
+              margin-bottom: 12mm !important;
               width: 100% !important;
             }
             .print-brand-box {
@@ -796,7 +827,7 @@ export default function InvoiceDashboard() {
       <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-4 sm:p-8">
         <div className="max-w-7xl mx-auto space-y-6 no-print">
           
-          {/* Header con menu a tendina e pulsante Gestione */}
+          {/* Header con menu a tendina e pulsanti */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl relative z-20">
             <div>
               <h1 className="text-3xl font-extrabold text-white tracking-tight">Gestionale Fatture</h1>
@@ -855,6 +886,7 @@ export default function InvoiceDashboard() {
                 Gestione
               </button>
 
+              {/* Pulsante Prospetto Cliente */}
               <button 
                 onClick={() => setIsProspectOpen(true)}
                 className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg transition-all duration-200 border border-slate-600 text-sm"
@@ -867,7 +899,7 @@ export default function InvoiceDashboard() {
             </div>
           </div>
 
-          {/* Bar Filtri */}
+          {/* Bar Filtri (Inclusi Anno, Stato Pagamento e Pulsante Controllo) */}
           <div className="bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-lg flex flex-col md:flex-row gap-4 items-end">
             <div className="flex-1 w-full">
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Cliente</label>
@@ -900,6 +932,30 @@ export default function InvoiceDashboard() {
                 ))}
               </select>
             </div>
+
+            {/* 1. MODIFICA: Filtro Stato Pagamento a fianco dell'Anno */}
+            <div className="w-full md:w-48">
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Stato Pagamento</label>
+              <select 
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                value={paymentFilter}
+                onChange={(e) => setPaymentFilter(e.target.value)}
+              >
+                <option value="ALL">💳 Tutte</option>
+                <option value="PAID">🟢 Solo Pagate</option>
+                <option value="UNPAID">🔴 Solo Non Pagate</option>
+              </select>
+            </div>
+
+            {/* 2. MODIFICA: Pulsante "Controllo" per la modale */}
+            <div>
+              <button
+                onClick={() => setControlModalOpen(true)}
+                className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-3 rounded-xl font-semibold shadow-lg shadow-indigo-600/30 transition-all text-sm flex items-center justify-center gap-2"
+              >
+                📊 Controllo
+              </button>
+            </div>
           </div>
 
           {/* Tabella Fatture */}
@@ -920,7 +976,7 @@ export default function InvoiceDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-700/50 text-sm">
-                  {invoicesList.map((invoiceItem) => {
+                  {displayedInvoices.map((invoiceItem) => {
                     const yearFromDate = invoiceItem.issuedate ? invoiceItem.issuedate.substring(0, 4) : ''
                     const displayInvoiceNum = invoiceItem.invoicenumber && yearFromDate ? `${invoiceItem.invoicenumber}/${yearFromDate}` : invoiceItem.invoicenumber
 
@@ -965,7 +1021,7 @@ export default function InvoiceDashboard() {
                       </tr>
                     )
                   })}
-                  {invoicesList.length === 0 && (
+                  {displayedInvoices.length === 0 && (
                     <tr>
                       <td colSpan="9" className="py-12 text-center text-slate-500 font-medium">
                         Nessuna fattura trovata con i filtri selezionati.
@@ -978,6 +1034,136 @@ export default function InvoiceDashboard() {
           </div>
 
         </div>
+
+        {/* 2. MODIFICA: Finestra Modale "Controllo" per Anno e Mese */}
+        {controlModalOpen && (
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-5xl w-full shadow-2xl space-y-6 flex flex-col max-h-[90vh]">
+              
+              <div className="flex justify-between items-center border-b border-slate-700 pb-4">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  📊 Controllo Fatture per Anno e Mese
+                </h2>
+                <button 
+                  onClick={() => setControlModalOpen(false)} 
+                  className="text-slate-400 hover:text-white text-lg font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Selettori Anno e Mese per il Controllo */}
+              <div className="flex flex-wrap gap-4 items-center bg-slate-900 p-4 rounded-xl border border-slate-700">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Anno</label>
+                  <select
+                    value={controlYear}
+                    onChange={(e) => setControlYear(e.target.value)}
+                    className="bg-slate-800 text-white px-4 py-2 rounded-lg border border-slate-600 text-sm outline-none"
+                  >
+                    <option value="ALL">Tutti gli anni</option>
+                    <option value="2026">2026</option>
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Mese</label>
+                  <select
+                    value={controlMonth}
+                    onChange={(e) => setControlMonth(e.target.value)}
+                    className="bg-slate-800 text-white px-4 py-2 rounded-lg border border-slate-600 text-sm outline-none"
+                  >
+                    <option value="ALL">Tutti i mesi</option>
+                    <option value="01">Gennaio</option>
+                    <option value="02">Febbraio</option>
+                    <option value="03">Marzo</option>
+                    <option value="04">Aprile</option>
+                    <option value="05">Maggio</option>
+                    <option value="06">Giugno</option>
+                    <option value="07">Luglio</option>
+                    <option value="08">Agosto</option>
+                    <option value="09">Settembre</option>
+                    <option value="10">Ottobre</option>
+                    <option value="11">Novembre</option>
+                    <option value="12">Dicembre</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Tabella Fatture filtrate nel Controllo */}
+              <div className="overflow-y-auto flex-1 border border-slate-700 rounded-xl">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-slate-950/70 text-slate-400 text-xs uppercase sticky top-0">
+                    <tr>
+                      <th className="p-3">Data</th>
+                      <th className="p-3">N° Fattura</th>
+                      <th className="p-3">Cliente</th>
+                      <th className="p-3 text-right">Imponibile</th>
+                      <th className="p-3 text-right">IVA</th>
+                      <th className="p-3 text-right">Incasso</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/50 text-xs">
+                    {controlFilteredInvoices.map((item) => {
+                      const yearFromDate = item.issuedate ? item.issuedate.substring(0, 4) : ''
+                      const displayNum = item.invoicenumber && yearFromDate ? `${item.invoicenumber}/${yearFromDate}` : item.invoicenumber
+                      return (
+                        <tr key={item.id} className="hover:bg-slate-700/30">
+                          <td className="p-3 text-slate-300">{formatDateToIT(item.issuedate)}</td>
+                          <td className="p-3 font-bold text-indigo-400">{displayNum}</td>
+                          <td className="p-3 font-medium text-white">{item.clients?.name || 'Cliente'}</td>
+                          <td className="p-3 text-right font-mono text-slate-200">€ {(Number(item.taxableamount) || 0).toFixed(2)}</td>
+                          <td className="p-3 text-right font-mono text-slate-200">€ {(Number(item.vatamount) || 0).toFixed(2)}</td>
+                          <td className="p-3 text-right font-mono text-emerald-400 font-bold">€ {(Number(item.totalamount) || 0).toFixed(2)}</td>
+                        </tr>
+                      )
+                    })}
+                    {controlFilteredInvoices.length === 0 && (
+                      <tr>
+                        <td colSpan="6" className="p-8 text-center text-slate-500 italic">
+                          Nessuna fattura trovata per il periodo selezionato.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Sezione Totali in basso con N. Fatture iniziale come primo dato */}
+              <div className="bg-slate-900 p-4 rounded-xl border border-slate-700 grid grid-cols-1 sm:grid-cols-4 gap-4 text-center">
+                <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                  <span className="block text-xs font-semibold text-slate-400 uppercase">N. Fatture</span>
+                  <span className="text-lg font-bold font-mono text-white">{controlFilteredInvoices.length}</span>
+                </div>
+                <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                  <span className="block text-xs font-semibold text-slate-400 uppercase">Totale Imponibile</span>
+                  <span className="text-lg font-bold font-mono text-indigo-400">€ {controlTotalTaxable.toFixed(2)}</span>
+                </div>
+                <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                  <span className="block text-xs font-semibold text-slate-400 uppercase">Totale IVA</span>
+                  <span className="text-lg font-bold font-mono text-amber-400">€ {controlTotalVat.toFixed(2)}</span>
+                </div>
+                <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                  <span className="block text-xs font-semibold text-slate-400 uppercase">Totale Incasso</span>
+                  <span className="text-lg font-bold font-mono text-emerald-400">€ {controlTotalCollection.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* Footer Chiusura */}
+              <div className="flex justify-end pt-2 border-t border-slate-700">
+                <button 
+                  onClick={() => setControlModalOpen(false)}
+                  className="px-5 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-medium text-sm transition-colors"
+                >
+                  Chiudi
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
 
         {/* Modal Gestione (Prospetto Generale & Grafico) */}
         {isManagementOpen && (
@@ -1355,7 +1541,7 @@ export default function InvoiceDashboard() {
 
                   </div>
 
-                  {/* Sezione AFFIANCATA ESCLUSIVA PER LA STAMPA (Stile formale con intestazioni scure) */}
+                  {/* Sezione AFFIANCATA ESCLUSIVA PER LA STAMPA */}
                   <div className="hidden print:block print-grid-tables">
                     
                     {/* Tabella Pagate Stampa */}
@@ -1432,7 +1618,7 @@ export default function InvoiceDashboard() {
 
                   </div>
 
-                  {/* Sezione Filtri Anno e Stato per l'Elenco Fatture del Prospetto (Nascosto in stampa) */}
+                  {/* Sezione Filtri Anno e Stato per l'Elenco Fatture del Prospetto */}
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 p-4 rounded-xl border border-slate-700 no-print">
                     <h3 className="text-white font-bold text-sm">Elenco Fatture del Cliente</h3>
                     <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
@@ -1467,7 +1653,7 @@ export default function InvoiceDashboard() {
                     </div>
                   </div>
 
-                  {/* Tabella Dettaglio Fatture INTERATTIVA a schermo (Filtri applicati dall'utente) */}
+                  {/* Tabella Dettaglio Fatture INTERATTIVA a schermo */}
                   <div className="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden no-print">
                     <div className="overflow-x-auto max-h-64 overflow-y-auto">
                       <table className="w-full text-left border-collapse text-xs">
@@ -1515,7 +1701,7 @@ export default function InvoiceDashboard() {
                     </div>
                   </div>
 
-                  {/* Tabella Dettaglio Fatture ESCLUSIVA per la STAMPA (3. Elenco Fatture Non Pagate con Numero, Data, Imponibile, IVA, Incasso, Data pagamento) */}
+                  {/* Tabella Dettaglio Fatture ESCLUSIVA per la STAMPA */}
                   <div className="hidden print:block bg-white rounded-xl overflow-hidden mt-2">
                     <div className="print-section-header">
                       3. Elenco Fatture Non Pagate
