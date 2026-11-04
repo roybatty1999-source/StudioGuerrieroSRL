@@ -14,6 +14,7 @@ export default function ServicesDashboard() {
   // Filtro per Cliente selezionato ('ALL' oppure l'ID del cliente)
   const [selectedClientId, setSelectedClientId] = useState('ALL')
   const [showClientMenu, setShowClientMenu] = useState(false)
+  const [clientFilterSearch, setClientFilterSearch] = useState('')
   const clientMenuRef = useRef(null)
 
   // Filtro per Codice CPA Globale ("Ricerca")
@@ -41,6 +42,11 @@ export default function ServicesDashboard() {
   const [showCpaDropdown, setShowCpaDropdown] = useState(false)
   const cpaRef = useRef(null)
 
+  // Stato per l'Autocomplete del Cliente nel form Servizi
+  const [formClientSearch, setFormClientSearch] = useState('')
+  const [showFormClientDropdown, setShowFormClientDropdown] = useState(false)
+  const formClientRef = useRef(null)
+
   useEffect(() => {
     loadClients()
     loadServices()
@@ -49,6 +55,9 @@ export default function ServicesDashboard() {
     function handleClickOutside(event) {
       if (cpaRef.current && !cpaRef.current.contains(event.target)) {
         setShowCpaDropdown(false)
+      }
+      if (formClientRef.current && !formClientRef.current.contains(event.target)) {
+        setShowFormClientDropdown(false)
       }
       if (clientMenuRef.current && !clientMenuRef.current.contains(event.target)) {
         setShowClientMenu(false)
@@ -98,7 +107,10 @@ export default function ServicesDashboard() {
   function openInsertModal() {
     setIsEditMode(false)
     setCurrentServiceId(null)
-    setClientId(clientsList[0]?.id || '')
+    const firstClient = clientsList[0] || {}
+    setClientId(firstClient.id || '')
+    setFormClientSearch(firstClient.name || '')
+    setShowFormClientDropdown(false)
     setThirdPartyName('')
     setIsVendor(false)
     setServiceDescription('')
@@ -114,6 +126,11 @@ export default function ServicesDashboard() {
     setIsEditMode(true)
     setCurrentServiceId(service.id)
     setClientId(service.clientid)
+    
+    const matchedClient = clientsList.find(c => c.id === service.clientid)
+    setFormClientSearch(matchedClient ? matchedClient.name : '')
+    setShowFormClientDropdown(false)
+
     setThirdPartyName(service.thirdpartyname || '')
     setIsVendor(service.isvendor)
     setServiceDescription(service.servicedescription)
@@ -145,6 +162,11 @@ export default function ServicesDashboard() {
 
   async function handleSaveService(e) {
     e.preventDefault()
+
+    if (!clientId) {
+      alert("Seleziona un cliente valido dall'elenco dei suggerimenti.")
+      return
+    }
 
     const payload = {
       clientid: clientId,
@@ -191,6 +213,14 @@ export default function ServicesDashboard() {
     item.description.toLowerCase().includes(cpaMenuSearchQuery.toLowerCase())
   )
 
+  const filteredClientsList = clientsList.filter(client =>
+    client.name.toLowerCase().includes(clientFilterSearch.toLowerCase())
+  )
+
+  const filteredFormClientsList = clientsList.filter(client =>
+    client.name.toLowerCase().includes(formClientSearch.toLowerCase())
+  )
+
   // --- FILTRAGGIO GLOBALE SERVIZI ---
   let displayedServices = selectedClientId === 'ALL' 
     ? servicesList 
@@ -232,7 +262,7 @@ export default function ServicesDashboard() {
             
             <div className="flex flex-wrap items-center gap-3">
               
-              {/* Menu a Scomparsa "Cliente" */}
+              {/* Menu a Scomparsa "Cliente" con Autocomplete */}
               <div className="relative" ref={clientMenuRef}>
                 <button 
                   onClick={() => setShowClientMenu(!showClientMenu)}
@@ -242,23 +272,37 @@ export default function ServicesDashboard() {
                 </button>
 
                 {showClientMenu && (
-                  <div className="absolute right-0 mt-2 w-56 bg-slate-950 border border-slate-700 rounded-xl shadow-2xl py-2 z-50 max-h-60 overflow-y-auto">
+                  <div className="absolute right-0 mt-2 w-72 bg-slate-950 border border-slate-700 rounded-xl shadow-2xl p-3 z-50 space-y-2">
                     <button 
-                      onClick={() => { setSelectedClientId('ALL'); setShowClientMenu(false); }}
-                      className="w-full text-left px-4 py-2 text-xs text-indigo-400 font-bold hover:bg-indigo-600/35 transition-colors border-b border-slate-800"
+                      onClick={() => { setSelectedClientId('ALL'); setShowClientMenu(false); setClientFilterSearch(''); }}
+                      className="w-full text-left px-3 py-2 text-xs text-indigo-400 font-bold hover:bg-indigo-600/35 rounded-lg transition-colors border-b border-slate-800 mb-1"
                     >
                       🌐 Mostra Tutti i Clienti
                     </button>
-                    {clientsList.map(client => (
-                      <button 
-                        key={client.id}
-                        onClick={() => { setSelectedClientId(client.id); setShowClientMenu(false); }}
-                        className="w-full text-left px-4 py-2 text-xs text-slate-200 hover:bg-indigo-600/30 transition-colors truncate"
-                        title={client.name}
-                      >
-                        {client.name}
-                      </button>
-                    ))}
+                    
+                    <input 
+                      type="text" 
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                      placeholder="Cerca cliente..."
+                      value={clientFilterSearch}
+                      onChange={(e) => setClientFilterSearch(e.target.value)}
+                    />
+
+                    <div className="max-h-52 overflow-y-auto space-y-1">
+                      {filteredClientsList.map(client => (
+                        <div 
+                          key={client.id}
+                          onClick={() => { setSelectedClientId(client.id); setShowClientMenu(false); setClientFilterSearch(''); }}
+                          className="p-2 hover:bg-indigo-600/40 cursor-pointer text-xs rounded transition-colors text-slate-200 truncate"
+                          title={client.name}
+                        >
+                          {client.name}
+                        </div>
+                      ))}
+                      {filteredClientsList.length === 0 && (
+                        <div className="p-2 text-xs text-slate-500 italic text-center">Nessun cliente trovato.</div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -480,19 +524,44 @@ export default function ServicesDashboard() {
               <form onSubmit={handleSaveService} className="space-y-4">
                 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
+                  
+                  {/* Selezione Cliente con Autocomplete nella Modale */}
+                  <div className="relative" ref={formClientRef}>
                     <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Cliente *</label>
-                    <select 
+                    <input 
+                      type="text"
                       className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                      value={clientId}
-                      onChange={(e) => setClientId(e.target.value)}
+                      value={formClientSearch}
+                      onChange={(e) => {
+                        setFormClientSearch(e.target.value)
+                        setShowFormClientDropdown(true)
+                        setClientId('')
+                      }}
+                      onFocus={() => setShowFormClientDropdown(true)}
+                      placeholder="Cerca cliente..."
                       required
-                    >
-                      <option value="">Seleziona...</option>
-                      {clientsList.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
+                    />
+
+                    {showFormClientDropdown && (
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-slate-950 border border-slate-600 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-[100] divide-y divide-slate-800">
+                        {filteredFormClientsList.map(c => (
+                          <div 
+                            key={c.id}
+                            onClick={() => {
+                              setClientId(c.id)
+                              setFormClientSearch(c.name)
+                              setShowFormClientDropdown(false)
+                            }}
+                            className="p-3 hover:bg-indigo-600/40 cursor-pointer text-xs text-slate-200 transition-colors"
+                          >
+                            {c.name}
+                          </div>
+                        ))}
+                        {filteredFormClientsList.length === 0 && (
+                          <div className="p-3 text-xs text-slate-400 italic">Nessun cliente trovato.</div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div>
