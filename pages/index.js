@@ -11,6 +11,11 @@ export default function ServicesDashboard() {
   const [clientsList, setClientsList] = useState([])
   const [cpaDatabase, setCpaDatabase] = useState([])
 
+  // Filtro per Cliente selezionato ('ALL' oppure l'ID del cliente)
+  const [selectedClientId, setSelectedClientId] = useState('ALL')
+  const [showClientMenu, setShowClientMenu] = useState(false)
+  const clientMenuRef = useRef(null)
+
   // Stati Modale Inserimento/Modifica Servizio
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
@@ -55,6 +60,9 @@ export default function ServicesDashboard() {
       if (cpaMenuRef.current && !cpaMenuRef.current.contains(event.target)) {
         setShowCpaMenu(false)
       }
+      if (clientMenuRef.current && !clientMenuRef.current.contains(event.target)) {
+        setShowClientMenu(false)
+      }
     }
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
@@ -69,7 +77,7 @@ export default function ServicesDashboard() {
       setClientsList(data)
     }
   }
- 
+
   async function loadServices() {
     const { data, error } = await supabaseClient
       .from('services')
@@ -103,9 +111,7 @@ export default function ServicesDashboard() {
     const payload = { code: newCpaCode.trim(), description: newCpaDesc.trim() }
 
     if (editingCpaCodeOriginal) {
-      // Modifica codice esistente
       if (editingCpaCodeOriginal !== payload.code) {
-        // Se il codice primario è cambiato, eliminiamo il vecchio e inseriamo il nuovo
         await supabaseClient.from('cpacodes').delete().eq('code', editingCpaCodeOriginal)
       }
       const { error } = await supabaseClient.from('cpacodes').upsert([payload])
@@ -114,7 +120,6 @@ export default function ServicesDashboard() {
         return
       }
     } else {
-      // Inserimento nuovo
       const { error } = await supabaseClient.from('cpacodes').insert([payload])
       if (error) {
         alert("Errore nell'inserimento (forse il codice esiste già?): " + error.message)
@@ -190,12 +195,9 @@ export default function ServicesDashboard() {
 
   function handleSelectCpaItem(item) {
     setCpaCode(item.code)
-    setCpaSearchQuery(`${item.code} - ${item.description}`)
+    setCpaSearchQuery(item.code)
     setShowCpaDropdown(false)
-
-    if (!serviceDescription || serviceDescription.trim().length === 0) {
-      setServiceDescription(item.description)
-    }
+    setServiceDescription(item.description)
   }
 
   async function handleSaveService(e) {
@@ -250,6 +252,19 @@ export default function ServicesDashboard() {
     item.description.toLowerCase().includes(cpaFilterText.toLowerCase())
   )
 
+  // Filtro dei servizi in base al cliente selezionato
+  const displayedServices = selectedClientId === 'ALL' 
+    ? servicesList 
+    : servicesList.filter(s => s.clientid === selectedClientId)
+
+  // Separazione in Vendite (isvendor = false) e Acquisti (isvendor = true)
+  const salesServices = displayedServices.filter(s => !s.isvendor)
+  const purchaseServices = displayedServices.filter(s => s.isvendor)
+
+  const currentSelectedClientName = selectedClientId === 'ALL' 
+    ? 'Tutti i Clienti' 
+    : clientsList.find(c => c.id === selectedClientId)?.name || 'Cliente'
+
   return (
     <>
       <Head>
@@ -260,14 +275,47 @@ export default function ServicesDashboard() {
       <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-4 sm:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
           
-          {/* Header Principale con menu a scomparsa "Codici" */}
+          {/* Header Principale con menu Clienti e Codici */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
             <div>
               <h1 className="text-3xl font-extrabold text-white tracking-tight">Gestione Servizi</h1>
-              <p className="text-slate-400 text-sm mt-1">Servizi in Acquisto e in Vendita associati ai Clienti/Fornitori</p>
+              <p className="text-slate-400 text-sm mt-1">
+                Visualizzazione corrente: <span className="text-indigo-400 font-semibold">{currentSelectedClientName}</span>
+              </p>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Pulsante Menu a Scomparsa "Cliente" */}
+              <div className="relative" ref={clientMenuRef}>
+                <button 
+                  onClick={() => setShowClientMenu(!showClientMenu)}
+                  className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2.5 rounded-xl font-semibold border border-slate-600 transition-all text-sm"
+                >
+                  👤 Cliente: {selectedClientId === 'ALL' ? 'Tutti ▾' : `${currentSelectedClientName} ▾`}
+                </button>
+
+                {showClientMenu && (
+                  <div className="absolute right-0 mt-2 w-56 bg-slate-950 border border-slate-700 rounded-xl shadow-2xl py-2 z-50 max-h-60 overflow-y-auto">
+                    <button 
+                      onClick={() => { setSelectedClientId('ALL'); setShowClientMenu(false); }}
+                      className="w-full text-left px-4 py-2 text-xs text-indigo-400 font-bold hover:bg-indigo-600/30 transition-colors border-b border-slate-800"
+                    >
+                      🌐 Mostra Tutti i Clienti
+                    </button>
+                    {clientsList.map(client => (
+                      <button 
+                        key={client.id}
+                        onClick={() => { setSelectedClientId(client.id); setShowClientMenu(false); }}
+                        className="w-full text-left px-4 py-2 text-xs text-slate-200 hover:bg-indigo-600/30 transition-colors truncate"
+                        title={client.name}
+                      >
+                        {client.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Menu a scomparsa Codici CPA */}
               <div className="relative" ref={cpaMenuRef}>
                 <button 
@@ -314,69 +362,141 @@ export default function ServicesDashboard() {
             </div>
           </div>
 
-          {/* Tabella Servizi */}
-          <div className="bg-slate-800 rounded-2xl border border-slate-700 shadow-xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-950/50 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
-                    <th className="py-4 px-6">Tipo</th>
-                    <th className="py-4 px-6">Cliente / Fornitore</th>
-                    <th className="py-4 px-6">Descrizione Servizio</th>
-                    <th className="py-4 px-6">Codice CPA</th>
-                    <th className="py-4 px-6 text-center">Erogazione</th>
-                    <th className="py-4 px-6 text-center">Incasso</th>
-                    <th className="py-4 px-6 text-right">Azioni</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-700/50 text-sm">
-                  {servicesList.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-700/30 transition-colors">
-                      <td className="py-4 px-6">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${item.isvendor ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}`}>
-                          {item.isvendor ? 'Acquisto' : 'Vendita'}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6 font-medium text-white">
-                        {item.clients?.name || 'Sconosciuto'}
-                      </td>
-                      <td className="py-4 px-6 text-slate-300 max-w-md truncate" title={item.servicedescription}>
-                        {item.servicedescription}
-                      </td>
-                      <td className="py-4 px-6 font-mono text-indigo-400 font-semibold">
-                        {item.cpacode}
-                      </td>
-                      <td className="py-4 px-6 text-center font-bold text-slate-200">
-                        {item.delivery}
-                      </td>
-                      <td className="py-4 px-6 text-center font-bold text-slate-200">
-                        {item.collectiontype}
-                      </td>
-                      <td className="py-4 px-6 text-right space-x-2">
-                        <button 
-                          onClick={() => openEditModal(item)}
-                          className="bg-slate-700 hover:bg-amber-600/80 text-amber-300 hover:text-white px-3 py-1.5 rounded-lg font-medium text-xs border border-amber-500/30 transition-all"
-                        >
-                          Modifica
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteService(item.id)}
-                          className="bg-slate-700 hover:bg-rose-600/80 text-rose-300 hover:text-white px-3 py-1.5 rounded-lg font-medium text-xs border border-rose-500/30 transition-all"
-                        >
-                          Cancella
-                        </button>
-                      </td>
+          {/* SEZIONE VENDITE */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-emerald-400 flex items-center gap-2">
+                🟢 Vendite <span className="text-xs bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-0.5 rounded-full text-emerald-300">Il cliente è acquirente</span>
+              </h2>
+              <span className="text-xs text-slate-400">Totale: {salesServices.length}</span>
+            </div>
+
+            <div className="bg-slate-800 rounded-2xl border border-slate-700 shadow-xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-950/50 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
+                      <th className="py-3 px-6">Cliente / Fornitore</th>
+                      <th className="py-3 px-6">Descrizione Servizio</th>
+                      <th className="py-3 px-6">Codice CPA</th>
+                      <th className="py-3 px-6 text-center">Erogazione</th>
+                      <th className="py-3 px-6 text-center">Incasso</th>
+                      <th className="py-3 px-6 text-right">Azioni</th>
                     </tr>
-                  ))}
-                  {servicesList.length === 0 && (
-                    <tr>
-                      <td colSpan="7" className="py-12 text-center text-slate-500 font-medium">
-                        Nessun servizio registrato. Clicca su &quot;Nuovo Servizio&quot; per iniziare.
-                      </td>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/50 text-sm">
+                    {salesServices.map((item) => (
+                      <tr key={item.id} className="hover:bg-slate-700/30 transition-colors">
+                        <td className="py-3 px-6 font-medium text-white">
+                          {item.clients?.name || 'Sconosciuto'}
+                        </td>
+                        <td className="py-3 px-6 text-slate-300 max-w-md truncate" title={item.servicedescription}>
+                          {item.servicedescription}
+                        </td>
+                        <td className="py-3 px-6 font-mono text-indigo-400 font-semibold">
+                          {item.cpacode}
+                        </td>
+                        <td className="py-3 px-6 text-center font-bold text-slate-200">
+                          {item.delivery}
+                        </td>
+                        <td className="py-3 px-6 text-center font-bold text-slate-200">
+                          {item.collectiontype}
+                        </td>
+                        <td className="py-3 px-6 text-right space-x-2">
+                          <button 
+                            onClick={() => openEditModal(item)}
+                            className="bg-slate-700 hover:bg-amber-600/80 text-amber-300 hover:text-white px-3 py-1.5 rounded-lg font-medium text-xs border border-amber-500/30 transition-all"
+                          >
+                            Modifica
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteService(item.id)}
+                            className="bg-slate-700 hover:bg-rose-600/80 text-rose-300 hover:text-white px-3 py-1.5 rounded-lg font-medium text-xs border border-rose-500/30 transition-all"
+                          >
+                            Cancella
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {salesServices.length === 0 && (
+                      <tr>
+                        <td colSpan="6" className="py-8 text-center text-slate-500 font-medium text-xs">
+                          Nessun servizio in vendita trovato per la selezione corrente.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* SEZIONE ACQUISTI */}
+          <div className="space-y-3 pt-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-amber-400 flex items-center gap-2">
+                🟠 Acquisti <span className="text-xs bg-amber-500/20 border border-amber-500/30 px-2.5 py-0.5 rounded-full text-amber-300">Il cliente è fornitore</span>
+              </h2>
+              <span className="text-xs text-slate-400">Totale: {purchaseServices.length}</span>
+            </div>
+
+            <div className="bg-slate-800 rounded-2xl border border-slate-700 shadow-xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-950/50 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
+                      <th className="py-3 px-6">Cliente / Fornitore</th>
+                      <th className="py-3 px-6">Descrizione Servizio</th>
+                      <th className="py-3 px-6">Codice CPA</th>
+                      <th className="py-3 px-6 text-center">Erogazione</th>
+                      <th className="py-3 px-6 text-center">Incasso</th>
+                      <th className="py-3 px-6 text-right">Azioni</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/50 text-sm">
+                    {purchaseServices.map((item) => (
+                      <tr key={item.id} className="hover:bg-slate-700/30 transition-colors">
+                        <td className="py-3 px-6 font-medium text-white">
+                          {item.clients?.name || 'Sconosciuto'}
+                        </td>
+                        <td className="py-3 px-6 text-slate-300 max-w-md truncate" title={item.servicedescription}>
+                          {item.servicedescription}
+                        </td>
+                        <td className="py-3 px-6 font-mono text-indigo-400 font-semibold">
+                          {item.cpacode}
+                        </td>
+                        <td className="py-3 px-6 text-center font-bold text-slate-200">
+                          {item.delivery}
+                        </td>
+                        <td className="py-3 px-6 text-center font-bold text-slate-200">
+                          {item.collectiontype}
+                        </td>
+                        <td className="py-3 px-6 text-right space-x-2">
+                          <button 
+                            onClick={() => openEditModal(item)}
+                            className="bg-slate-700 hover:bg-amber-600/80 text-amber-300 hover:text-white px-3 py-1.5 rounded-lg font-medium text-xs border border-amber-500/30 transition-all"
+                          >
+                            Modifica
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteService(item.id)}
+                            className="bg-slate-700 hover:bg-rose-600/80 text-rose-300 hover:text-white px-3 py-1.5 rounded-lg font-medium text-xs border border-rose-500/30 transition-all"
+                          >
+                            Cancella
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {purchaseServices.length === 0 && (
+                      <tr>
+                        <td colSpan="6" className="py-8 text-center text-slate-500 font-medium text-xs">
+                          Nessun servizio in acquisto trovato per la selezione corrente.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
