@@ -40,7 +40,7 @@ export default function InvoiceDashboard() {
   const [controlModalOpen, setControlModalOpen] = useState(false)
   const [controlYear, setControlYear] = useState('2026')
   const [controlMonth, setControlMonth] = useState('02')
-  const [controlStatusFilter, setControlStatusFilter] = useState('ALL') // Nuovo filtro stato per il Controllo
+  const [controlStatusFilter, setControlStatusFilter] = useState('ALL')
   
   // Stati Modale Inserimento/Modifica Fattura
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -105,7 +105,7 @@ export default function InvoiceDashboard() {
     return true
   })
 
-  // Filtraggio di base per Anno e Mese nella modale di Controllo
+  // 1. Filtraggio di base per Anno e Mese nella modale di Controllo (utilizzato per i TOTALI)
   const controlBaseFilteredInvoices = allInvoicesList.filter(invoiceItem => {
     if (!invoiceItem.issuedate) return false
     const invoiceDateObj = new Date(invoiceItem.issuedate)
@@ -118,26 +118,26 @@ export default function InvoiceDashboard() {
     return matchesYear && matchesMonth
   })
 
-  // Applicazione ulteriore del filtro stato (Tutte, Pagate, Non Pagate) per la tabella in Controllo
-  const controlFilteredInvoices = controlBaseFilteredInvoices.filter(item => {
+  // 2. Filtraggio specifico per la TABELLA di Controllo (include anche lo stato di pagamento)
+  const controlTableFilteredInvoices = controlBaseFilteredInvoices.filter(item => {
     if (controlStatusFilter === 'PAID') return item.paymentdate != null
     if (controlStatusFilter === 'UNPAID') return item.paymentdate == null
     return true
   })
 
-  // Calcoli per i totali della modale di Controllo (basati sulla selezione corrente)
-  const controlTotalTaxable = controlFilteredInvoices.reduce((sum, item) => sum + (Number(item.taxableamount) || 0), 0)
-  const controlTotalVat = controlFilteredInvoices.reduce((sum, item) => sum + (Number(item.vatamount) || 0), 0)
-  const controlTotalCollection = controlFilteredInvoices.reduce((sum, item) => sum + (Number(item.totalamount) || 0), 0)
+  // Calcoli per i totali della modale di Controllo basati ESATTAMENTE sul filtro Anno/Mese (controlBaseFilteredInvoices)
+  const controlTotalTaxable = controlBaseFilteredInvoices.reduce((sum, item) => sum + (Number(item.taxableamount) || 0), 0)
+  const controlTotalVat = controlBaseFilteredInvoices.reduce((sum, item) => sum + (Number(item.vatamount) || 0), 0)
+  const controlTotalCollection = controlBaseFilteredInvoices.reduce((sum, item) => sum + (Number(item.totalamount) || 0), 0)
 
-  // Calcoli specifici per Fatture Pagate (nella modale Controllo)
-  const controlPaidInvoices = controlFilteredInvoices.filter(item => item.paymentdate != null)
+  // Calcoli specifici per Fatture Pagate (basati su Anno/Mese)
+  const controlPaidInvoices = controlBaseFilteredInvoices.filter(item => item.paymentdate != null)
   const controlPaidTaxable = controlPaidInvoices.reduce((sum, item) => sum + (Number(item.taxableamount) || 0), 0)
   const controlPaidVat = controlPaidInvoices.reduce((sum, item) => sum + (Number(item.vatamount) || 0), 0)
   const controlPaidCollection = controlPaidInvoices.reduce((sum, item) => sum + (Number(item.totalamount) || 0), 0)
 
-  // Calcoli specifici per Fatture Non Pagate (nella modale Controllo)
-  const controlUnpaidInvoices = controlFilteredInvoices.filter(item => item.paymentdate == null)
+  // Calcoli specifici per Fatture Non Pagate (basati su Anno/Mese)
+  const controlUnpaidInvoices = controlBaseFilteredInvoices.filter(item => item.paymentdate == null)
   const controlUnpaidTaxable = controlUnpaidInvoices.reduce((sum, item) => sum + (Number(item.taxableamount) || 0), 0)
   const controlUnpaidVat = controlUnpaidInvoices.reduce((sum, item) => sum + (Number(item.vatamount) || 0), 0)
   const controlUnpaidCollection = controlUnpaidInvoices.reduce((sum, item) => sum + (Number(item.totalamount) || 0), 0)
@@ -1111,7 +1111,7 @@ export default function InvoiceDashboard() {
                   </select>
                 </div>
 
-                {/* Nuovo Filtro Stato all'interno della modale di Controllo */}
+                {/* Filtro Stato che agisce unicamente sulla tabella */}
                 <div>
                   <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Visualizzazione</label>
                   <select
@@ -1126,7 +1126,7 @@ export default function InvoiceDashboard() {
                 </div>
               </div>
 
-              {/* Tabella Fatture filtrate nel Controllo */}
+              {/* Tabella Fatture filtrate nella modale (risponde anche allo stato di pagamento) */}
               <div className="overflow-y-auto flex-1 border border-slate-700 rounded-xl relative min-h-[220px]">
                 <table className="w-full text-left border-collapse">
                   <thead className="sticky top-0 bg-slate-900 text-slate-300 text-[11px] uppercase z-10 shadow-md">
@@ -1140,7 +1140,7 @@ export default function InvoiceDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/50 text-xs">
-                    {controlFilteredInvoices.map((item) => {
+                    {controlTableFilteredInvoices.map((item) => {
                       const yearFromDate = item.issuedate ? item.issuedate.substring(0, 4) : ''
                       const displayNum = item.invoicenumber && yearFromDate ? `${item.invoicenumber}/${yearFromDate}` : item.invoicenumber
                       
@@ -1155,7 +1155,7 @@ export default function InvoiceDashboard() {
                         </tr>
                       )
                     })}
-                    {controlFilteredInvoices.length === 0 && (
+                    {controlTableFilteredInvoices.length === 0 && (
                       <tr>
                         <td colSpan="6" className="py-6 text-center text-slate-500 italic text-xs">
                           Nessuna fattura trovata per il periodo selezionato.
@@ -1166,14 +1166,14 @@ export default function InvoiceDashboard() {
                 </table>
               </div>
 
-              {/* Sezione Totali in basso a ridotto ingombro */}
+              {/* Sezione Totali in basso (Indipendenti dal filtro di stato, basati solo su Anno e Mese) */}
               <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-700 space-y-1.5 shrink-0">
                 
                 {/* 1. Totale Complessivo */}
                 <div className="grid grid-cols-4 gap-2 text-center">
                   <div className="bg-slate-800 p-1.5 rounded border border-slate-700">
                     <span className="block text-[9px] font-semibold text-slate-400 uppercase">N. Fatture</span>
-                    <span className="text-xs font-bold font-mono text-white">{controlFilteredInvoices.length}</span>
+                    <span className="text-xs font-bold font-mono text-white">{controlBaseFilteredInvoices.length}</span>
                   </div>
                   <div className="bg-slate-800 p-1.5 rounded border border-slate-700">
                     <span className="block text-[9px] font-semibold text-slate-400 uppercase">Tot. Imponibile</span>
@@ -1795,7 +1795,7 @@ export default function InvoiceDashboard() {
                             <th className="text-right">Imponibile €</th>
                             <th className="text-right">IVA €</th>
                             <th className="text-right">Incasso €</th>
-                            <th className="ts-center">Data di Pagamento</th>
+                            <th className="text-center">Data di Pagamento</th>
                           </tr>
                         </thead>
                         <tbody>
