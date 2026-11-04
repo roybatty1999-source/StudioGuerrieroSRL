@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import Head from 'next/head'
 
@@ -6,32 +6,10 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const supabaseClient = createClient(supabaseUrl, supabaseKey)
 
-// Elenco/Database CPA Online integrato per ricerca rapida
-const CPA_DATABASE = [
-  { code: '62.01.11', description: 'Servizi di progettazione e sviluppo di pagine web e applicazioni' },
-  { code: '62.02.10', description: 'Servizi di consulenza nel campo delle tecnologie dell’informazione' },
-  { code: '62.03.10', description: 'Servizi di gestione di strutture e apparecchiature informatiche' },
-  { code: '62.09.20', description: 'Altri servizi di tecnologia dell’informazione e di assistenza informatica' },
-  { code: '63.11.11', description: 'Servizi di elaborazione dati, hosting e servizi connessi' },
-  { code: '69.20.10', description: 'Servizi di contabilità, revisione dei conti e consulenza fiscale' },
-  { code: '69.20.20', description: 'Servizi di tenuta delle scritture contabili' },
-  { code: '69.10.10', description: 'Servizi legali e di consulenza giuridica' },
-  { code: '70.22.11', description: 'Servizi di consulenza di direzione aziendale e gestione commerciale' },
-  { code: '70.22.12', description: 'Servizi di consulenza in materia di gestione finanziaria' },
-  { code: '71.12.11', description: 'Servizi di consulenza ingegneristica per lavori edili e civili' },
-  { code: '71.11.10', description: 'Servizi di architettura' },
-  { code: '73.11.11', description: 'Servizi pubblicitari completi e pianificazione di campagne' },
-  { code: '73.20.11', description: 'Servizi di ricerche di mercato e sondaggi di opinione' },
-  { code: '74.10.10', description: 'Servizi di design e grafica pubblicitaria' },
-  { code: '78.10.10', description: 'Servizi di ricerca, selezione e collocamento del personale' },
-  { code: '80.10.12', description: 'Servizi di vigilanza privata e protezione' },
-  { code: '81.21.10', description: 'Servizi di pulizia generale di edifici' },
-  { code: '82.11.10', description: 'Servizi integrati di supporto alle funzioni d’ufficio' }
-]
-
 export default function ServicesDashboard() {
   const [servicesList, setServicesList] = useState([])
   const [clientsList, setClientsList] = useState([])
+  const [cpaDatabase, setCpaDatabase] = useState([])
 
   // Stati Modale Inserimento/Modifica Servizio
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -40,19 +18,46 @@ export default function ServicesDashboard() {
 
   // Campi del form Servizio
   const [clientId, setClientId] = useState('')
-  const [isVendor, setIsVendor] = useState(false) // false = Vendita, true = Acquisto
+  const [isVendor, setIsVendor] = useState(false)
   const [serviceDescription, setServiceDescription] = useState('')
   const [cpaCode, setCpaCode] = useState('')
-  const [delivery, setDelivery] = useState('I') // 'I' o 'R'
-  const [collectionType, setCollectionType] = useState('R') // 'R', 'B' o 'X'
+  const [delivery, setDelivery] = useState('I')
+  const [collectionType, setCollectionType] = useState('R')
 
-  // Stato per la ricerca e il dropdown CPA
+  // Stato per il Dropdown CPA nel form Servizi
   const [cpaSearchQuery, setCpaSearchQuery] = useState('')
   const [showCpaDropdown, setShowCpaDropdown] = useState(false)
+  const cpaRef = useRef(null)
+
+  // Stati per il Menu a scomparsa "Codici" (CPA)
+  const [showCpaMenu, setShowCpaMenu] = useState(false)
+  const cpaMenuRef = useRef(null)
+
+  // Modali Gestione Tabella cpacodes
+  const [isCpaAddModalOpen, setIsCpaAddModalOpen] = useState(false)
+  const [isCpaManageModalOpen, setIsCpaManageModalOpen] = useState(false)
+  
+  // Form Aggiungi/Modifica CPA
+  const [newCpaCode, setNewCpaCode] = useState('')
+  const [newCpaDesc, setNewCpaDesc] = useState('')
+  const [editingCpaCodeOriginal, setEditingCpaCodeOriginal] = useState(null)
+  const [cpaFilterText, setCpaFilterText] = useState('')
 
   useEffect(() => {
     loadClients()
     loadServices()
+    loadCpaCodes()
+
+    function handleClickOutside(event) {
+      if (cpaRef.current && !cpaRef.current.contains(event.target)) {
+        setShowCpaDropdown(false)
+      }
+      if (cpaMenuRef.current && !cpaMenuRef.current.contains(event.target)) {
+        setShowCpaMenu(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
   async function loadClients() {
@@ -76,6 +81,74 @@ export default function ServicesDashboard() {
     }
   }
 
+  async function loadCpaCodes() {
+    const { data, error } = await supabaseClient
+      .from('cpacodes')
+      .select('code, description')
+      .order('code', { ascending: true })
+
+    if (!error && data) {
+      setCpaDatabase(data)
+    }
+  }
+
+  // --- GESTIONE CRUD TABELLA cpaCodes ---
+  async function handleSaveCpaCode(e) {
+    e.preventDefault()
+    if (!newCpaCode.trim() || !newCpaDesc.trim()) {
+      alert('Inserisci sia il codice che la descrizione.')
+      return
+    }
+
+    const payload = { code: newCpaCode.trim(), description: newCpaDesc.trim() }
+
+    if (editingCpaCodeOriginal) {
+      // Modifica codice esistente
+      if (editingCpaCodeOriginal !== payload.code) {
+        // Se il codice primario è cambiato, eliminiamo il vecchio e inseriamo il nuovo
+        await supabaseClient.from('cpacodes').delete().eq('code', editingCpaCodeOriginal)
+      }
+      const { error } = await supabaseClient.from('cpacodes').upsert([payload])
+      if (error) {
+        alert("Errore nell'aggiornamento: " + error.message)
+        return
+      }
+    } else {
+      // Inserimento nuovo
+      const { error } = await supabaseClient.from('cpacodes').insert([payload])
+      if (error) {
+        alert("Errore nell'inserimento (forse il codice esiste già?): " + error.message)
+        return
+      }
+    }
+
+    setIsCpaAddModalOpen(false)
+    setEditingCpaCodeOriginal(null)
+    setNewCpaCode('')
+    setNewCpaDesc('')
+    loadCpaCodes()
+  }
+
+  async function handleDeleteCpaCode(code) {
+    if (confirm(`Sei sicuro di voler eliminare il codice CPA ${code}?`)) {
+      const { error } = await supabaseClient.from('cpacodes').delete().eq('code', code)
+      if (error) {
+        alert("Errore durante l'eliminazione: " + error.message)
+      } else {
+        loadCpaCodes()
+      }
+    }
+  }
+
+  function openEditCpaModal(item) {
+    setEditingCpaCodeOriginal(item.code)
+    setNewCpaCode(item.code)
+    setNewCpaDesc(item.description)
+    setIsCpaManageModalOpen(false)
+    setIsCpaAddModalOpen(true)
+  }
+
+  // --- GESTIONE SERVIZI ---
   function openInsertModal() {
     setIsEditMode(false)
     setCurrentServiceId(null)
@@ -84,6 +157,7 @@ export default function ServicesDashboard() {
     setServiceDescription('')
     setCpaCode('')
     setCpaSearchQuery('')
+    setShowCpaDropdown(false)
     setDelivery('I')
     setCollectionType('R')
     setIsModalOpen(true)
@@ -97,6 +171,7 @@ export default function ServicesDashboard() {
     setServiceDescription(service.servicedescription)
     setCpaCode(service.cpacode)
     setCpaSearchQuery(service.cpacode)
+    setShowCpaDropdown(false)
     setDelivery(service.delivery)
     setCollectionType(service.collectiontype)
     setIsModalOpen(true)
@@ -118,7 +193,6 @@ export default function ServicesDashboard() {
     setCpaSearchQuery(`${item.code} - ${item.description}`)
     setShowCpaDropdown(false)
 
-    // Se la descrizione del servizio è vuota, suggeriamo automaticamente la descrizione CPA
     if (!serviceDescription || serviceDescription.trim().length === 0) {
       setServiceDescription(item.description)
     }
@@ -166,10 +240,14 @@ export default function ServicesDashboard() {
     loadServices()
   }
 
-  // Filtraggio CPA dinamico in base alla digitazione
-  const filteredCpaList = CPA_DATABASE.filter(item => 
+  const filteredCpaList = cpaDatabase.filter(item => 
     item.code.toLowerCase().includes(cpaSearchQuery.toLowerCase()) ||
     item.description.toLowerCase().includes(cpaSearchQuery.toLowerCase())
+  )
+
+  const filteredManageCpaList = cpaDatabase.filter(item =>
+    item.code.toLowerCase().includes(cpaFilterText.toLowerCase()) ||
+    item.description.toLowerCase().includes(cpaFilterText.toLowerCase())
   )
 
   return (
@@ -182,21 +260,61 @@ export default function ServicesDashboard() {
       <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-4 sm:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
           
-          {/* Intestazione */}
+          {/* Header Principale con menu a scomparsa "Codici" */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
             <div>
               <h1 className="text-3xl font-extrabold text-white tracking-tight">Gestione Servizi</h1>
               <p className="text-slate-400 text-sm mt-1">Servizi in Acquisto e in Vendita associati ai Clienti/Fornitori</p>
             </div>
-            <button 
-              onClick={openInsertModal}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-indigo-600/30 transition-all text-sm"
-            >
-              + Nuovo Servizio
-            </button>
+            
+            <div className="flex items-center gap-3">
+              {/* Menu a scomparsa Codici CPA */}
+              <div className="relative" ref={cpaMenuRef}>
+                <button 
+                  onClick={() => setShowCpaMenu(!showCpaMenu)}
+                  className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2.5 rounded-xl font-semibold border border-slate-600 transition-all text-sm"
+                >
+                  📁 Codici CPA ▾
+                </button>
+
+                {showCpaMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-slate-950 border border-slate-700 rounded-xl shadow-2xl py-2 z-50">
+                    <button 
+                      onClick={() => {
+                        setShowCpaMenu(false)
+                        setEditingCpaCodeOriginal(null)
+                        setNewCpaCode('')
+                        setNewCpaDesc('')
+                        setIsCpaAddModalOpen(true)
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-xs text-slate-200 hover:bg-indigo-600/30 transition-colors flex items-center gap-2"
+                    >
+                      ➕ Aggiungi Codice
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setShowCpaMenu(false)
+                        setCpaFilterText('')
+                        setIsCpaManageModalOpen(true)
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-xs text-slate-200 hover:bg-indigo-600/30 transition-colors flex items-center gap-2"
+                    >
+                      ✏️ Modifica / Gestisci Codici
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <button 
+                onClick={openInsertModal}
+                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-indigo-600/30 transition-all text-sm"
+              >
+                + Nuovo Servizio
+              </button>
+            </div>
           </div>
 
-          {/* Tabella Elenco Servizi */}
+          {/* Tabella Servizi */}
           <div className="bg-slate-800 rounded-2xl border border-slate-700 shadow-xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -264,7 +382,7 @@ export default function ServicesDashboard() {
 
         </div>
 
-        {/* Modal Inserimento / Modifica Servizio */}
+        {/* Modal Form Inserimento/Modifica Servizio */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
             <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-6">
@@ -307,31 +425,32 @@ export default function ServicesDashboard() {
                   </div>
                 </div>
 
-                {/* Campo Ricerca Codice CPA con Dropdown */}
-                <div className="relative">
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Codice CPA (Cerca o Seleziona da CPA Online) *</label>
+                {/* Selezione Codice CPA */}
+                <div className="relative" ref={cpaRef}>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                    Codice CPA * (Cerca nel database)
+                  </label>
                   <input 
                     type="text" 
                     className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-mono"
                     value={cpaSearchQuery}
+                    onClick={() => setShowCpaDropdown(true)}
                     onChange={(e) => {
                       setCpaSearchQuery(e.target.value)
                       setCpaCode(e.target.value)
                       setShowCpaDropdown(true)
                     }}
-                    onFocus={() => setShowCpaDropdown(true)}
-                    placeholder="Digita codice o parola chiave (es. 62.01.11 o web)..."
+                    placeholder="Digita codice o parola chiave..."
                     required
                   />
 
-                  {/* Dropdown dei Risultati CPA */}
-                  {showCpaDropdown && filteredCpaList.length > 0 && (
-                    <div className="absolute left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-800">
+                  {showCpaDropdown && (
+                    <div className="absolute left-0 right-0 top-full mt-1 bg-slate-950 border border-slate-600 rounded-xl shadow-2xl max-h-52 overflow-y-auto z-[100] divide-y divide-slate-800">
                       {filteredCpaList.map((item) => (
                         <div 
                           key={item.code} 
                           onClick={() => handleSelectCpaItem(item)}
-                          className="p-3 hover:bg-indigo-600/30 cursor-pointer text-xs transition-colors flex justify-between items-center"
+                          className="p-3 hover:bg-indigo-600/40 cursor-pointer text-xs transition-colors flex justify-between items-center"
                         >
                           <div>
                             <span className="font-bold text-indigo-400 font-mono mr-2">{item.code}</span>
@@ -339,6 +458,11 @@ export default function ServicesDashboard() {
                           </div>
                         </div>
                       ))}
+                      {filteredCpaList.length === 0 && (
+                        <div className="p-3 text-xs text-slate-400 italic">
+                          Nessun codice trovato.
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -406,6 +530,132 @@ export default function ServicesDashboard() {
                 </div>
 
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Aggiungi / Modifica Singolo Codice CPA */}
+        {isCpaAddModalOpen && (
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-6">
+              <div className="flex justify-between items-center border-b border-slate-700 pb-4">
+                <h2 className="text-xl font-bold text-white">
+                  {editingCpaCodeOriginal ? 'Modifica Codice CPA' : 'Aggiungi Nuovo Codice CPA'}
+                </h2>
+                <button onClick={() => setIsCpaAddModalOpen(false)} className="text-slate-400 hover:text-white">✕</button>
+              </div>
+
+              <form onSubmit={handleSaveCpaCode} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Codice CPA *</label>
+                  <input 
+                    type="text"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-mono"
+                    value={newCpaCode}
+                    onChange={(e) => setNewCpaCode(e.target.value)}
+                    placeholder="Es. 62.01.11"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Descrizione Attività *</label>
+                  <textarea 
+                    rows="3"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                    value={newCpaDesc}
+                    onChange={(e) => setNewCpaDesc(e.target.value)}
+                    placeholder="Descrizione ufficiale del codice CPA..."
+                    required
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsCpaAddModalOpen(false)}
+                    className="px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-700 font-medium transition-colors text-sm"
+                  >
+                    Annulla
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-600/30 transition-all text-sm"
+                  >
+                    Salva Codice
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Gestione/Modifica Elenco Codici CPA */}
+        {isCpaManageModalOpen && (
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-3xl w-full shadow-2xl space-y-6 max-h-[85vh] flex flex-col">
+              <div className="flex justify-between items-center border-b border-slate-700 pb-4">
+                <h2 className="text-xl font-bold text-white">Gestione Tabella Codici CPA</h2>
+                <button onClick={() => setIsCpaManageModalOpen(false)} className="text-slate-400 hover:text-white">✕</button>
+              </div>
+
+              <div>
+                <input 
+                  type="text" 
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                  placeholder="Filtra codici o descrizioni..."
+                  value={cpaFilterText}
+                  onChange={(e) => setCpaFilterText(e.target.value)}
+                />
+              </div>
+
+              <div className="overflow-y-auto flex-1 border border-slate-700 rounded-xl">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-slate-950/70 text-slate-400 text-xs uppercase sticky top-0">
+                    <tr>
+                      <th className="p-3">Codice</th>
+                      <th className="p-3">Descrizione</th>
+                      <th className="p-3 text-right">Azioni</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/50 text-xs">
+                    {filteredManageCpaList.map((item) => (
+                      <tr key={item.code} className="hover:bg-slate-700/30">
+                        <td className="p-3 font-mono text-indigo-400 font-bold">{item.code}</td>
+                        <td className="p-3 text-slate-300">{item.description}</td>
+                        <td className="p-3 text-right space-x-2">
+                          <button 
+                            onClick={() => openEditCpaModal(item)}
+                            className="bg-slate-700 hover:bg-amber-600 text-amber-300 hover:text-white px-2.5 py-1 rounded font-medium"
+                          >
+                            Modifica
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteCpaCode(item.code)}
+                            className="bg-slate-700 hover:bg-rose-600 text-rose-300 hover:text-white px-2.5 py-1 rounded font-medium"
+                          >
+                            Elimina
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredManageCpaList.length === 0 && (
+                      <tr>
+                        <td colSpan="3" className="p-6 text-center text-slate-500">Nessun codice trovato.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex justify-end pt-2 border-t border-slate-700">
+                <button 
+                  onClick={() => setIsCpaManageModalOpen(false)}
+                  className="px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-700 font-medium text-sm"
+                >
+                  Chiudi
+                </button>
+              </div>
             </div>
           </div>
         )}
