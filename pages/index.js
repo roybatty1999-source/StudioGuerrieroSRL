@@ -29,6 +29,7 @@ export default function ServicesDashboard() {
 
   // Campi del form Servizio
   const [clientId, setClientId] = useState('')
+  const [thirdPartyName, setThirdPartyName] = useState('') // Nuova colonna testo
   const [isVendor, setIsVendor] = useState(false)
   const [serviceDescription, setServiceDescription] = useState('')
   const [cpaCode, setCpaCode] = useState('')
@@ -73,7 +74,7 @@ export default function ServicesDashboard() {
   async function loadServices() {
     const { data, error } = await supabaseClient
       .from('services')
-      .select('id, clientid, isvendor, servicedescription, cpacode, delivery, collectiontype, clients(name)')
+      .select('id, clientid, thirdpartyname, isvendor, servicedescription, cpacode, delivery, collectiontype, clients(name)')
       .order('created_at', { ascending: false })
 
     if (!error && data) {
@@ -97,6 +98,7 @@ export default function ServicesDashboard() {
     setIsEditMode(false)
     setCurrentServiceId(null)
     setClientId(clientsList[0]?.id || '')
+    setThirdPartyName('')
     setIsVendor(false)
     setServiceDescription('')
     setCpaCode('')
@@ -111,6 +113,7 @@ export default function ServicesDashboard() {
     setIsEditMode(true)
     setCurrentServiceId(service.id)
     setClientId(service.clientid)
+    setThirdPartyName(service.thirdpartyname || '')
     setIsVendor(service.isvendor)
     setServiceDescription(service.servicedescription)
     setCpaCode(service.cpacode)
@@ -149,6 +152,7 @@ export default function ServicesDashboard() {
 
     const payload = {
       clientid: clientId,
+      thirdpartyname: thirdPartyName.trim(),
       isvendor: isVendor,
       servicedescription: serviceDescription.trim(),
       cpacode: cpaCode.trim(),
@@ -186,24 +190,20 @@ export default function ServicesDashboard() {
     item.description.toLowerCase().includes(cpaSearchQuery.toLowerCase())
   )
 
-  // Filtro per il menu a tendina "Ricerca" CPA
   const filteredCpaSearchMenu = cpaDatabase.filter(item =>
     item.code.toLowerCase().includes(cpaMenuSearchQuery.toLowerCase()) ||
     item.description.toLowerCase().includes(cpaMenuSearchQuery.toLowerCase())
   )
 
   // --- FILTRAGGIO GLOBALE SERVIZI ---
-  // 1. Filtro per Cliente
   let displayedServices = selectedClientId === 'ALL' 
     ? servicesList 
     : servicesList.filter(s => s.clientid === selectedClientId)
 
-  // 2. Filtro per Codice CPA (Ricerca)
   if (selectedCpaFilter !== 'ALL') {
     displayedServices = displayedServices.filter(s => s.cpacode === selectedCpaFilter)
   }
 
-  // Separazione in Vendite e Acquisti
   const salesServices = displayedServices.filter(s => !s.isvendor)
   const purchaseServices = displayedServices.filter(s => s.isvendor)
 
@@ -225,7 +225,7 @@ export default function ServicesDashboard() {
       <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-4 sm:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
           
-          {/* Header Principale con menu Clienti e Ricerca CPA */}
+          {/* Header Principale */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
             <div>
               <h1 className="text-3xl font-extrabold text-white tracking-tight">Gestione Servizi</h1>
@@ -236,7 +236,7 @@ export default function ServicesDashboard() {
             
             <div className="flex flex-wrap items-center gap-3">
               
-              {/* Pulsante Menu a Scomparsa "Cliente" */}
+              {/* Menu a Scomparsa "Cliente" */}
               <div className="relative" ref={clientMenuRef}>
                 <button 
                   onClick={() => setShowClientMenu(!showClientMenu)}
@@ -267,7 +267,7 @@ export default function ServicesDashboard() {
                 )}
               </div>
 
-              {/* Pulsante Menu a Scomparsa "Ricerca" Codice CPA */}
+              {/* Menu a Scomparsa "Ricerca" CPA */}
               <div className="relative" ref={cpaSearchMenuRef}>
                 <button 
                   onClick={() => setShowCpaSearchMenu(!showCpaSearchMenu)}
@@ -335,7 +335,8 @@ export default function ServicesDashboard() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-950/50 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
-                      <th className="py-3 px-6">Cliente  </th>
+                      <th className="py-3 px-6">Cliente</th>
+                      <th className="py-3 px-6">Cliente/Fornitore</th>
                       <th className="py-3 px-6">Descrizione Servizio</th>
                       <th className="py-3 px-6">Codice CPA</th>
                       <th className="py-3 px-6 text-center">Erogazione</th>
@@ -349,7 +350,10 @@ export default function ServicesDashboard() {
                         <td className="py-3 px-6 font-medium text-white">
                           {item.clients?.name || 'Sconosciuto'}
                         </td>
-                        <td className="py-3 px-6 text-slate-300 max-w-md truncate" title={item.servicedescription}>
+                        <td className="py-3 px-6 text-slate-300">
+                          {item.thirdpartyname || '-'}
+                        </td>
+                        <td className="py-3 px-6 text-slate-300 max-w-xs truncate" title={item.servicedescription}>
                           {item.servicedescription}
                         </td>
                         <td className="py-3 px-6 font-mono text-indigo-400 font-semibold">
@@ -379,7 +383,7 @@ export default function ServicesDashboard() {
                     ))}
                     {salesServices.length === 0 && (
                       <tr>
-                        <td colSpan="6" className="py-8 text-center text-slate-500 font-medium text-xs">
+                        <td colSpan="7" className="py-8 text-center text-slate-500 font-medium text-xs">
                           Nessun servizio in vendita trovato per i filtri correnti.
                         </td>
                       </tr>
@@ -404,7 +408,8 @@ export default function ServicesDashboard() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-950/50 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
-                      <th className="py-3 px-6">Fornitore</th>
+                      <th className="py-3 px-6">Cliente</th>
+                      <th className="py-3 px-6">Cliente/Fornitore</th>
                       <th className="py-3 px-6">Descrizione Servizio</th>
                       <th className="py-3 px-6">Codice CPA</th>
                       <th className="py-3 px-6 text-center">Erogazione</th>
@@ -418,7 +423,10 @@ export default function ServicesDashboard() {
                         <td className="py-3 px-6 font-medium text-white">
                           {item.clients?.name || 'Sconosciuto'}
                         </td>
-                        <td className="py-3 px-6 text-slate-300 max-w-md truncate" title={item.servicedescription}>
+                        <td className="py-3 px-6 text-slate-300">
+                          {item.thirdpartyname || '-'}
+                        </td>
+                        <td className="py-3 px-6 text-slate-300 max-w-xs truncate" title={item.servicedescription}>
                           {item.servicedescription}
                         </td>
                         <td className="py-3 px-6 font-mono text-indigo-400 font-semibold">
@@ -448,7 +456,7 @@ export default function ServicesDashboard() {
                     ))}
                     {purchaseServices.length === 0 && (
                       <tr>
-                        <td colSpan="6" className="py-8 text-center text-slate-500 font-medium text-xs">
+                        <td colSpan="7" className="py-8 text-center text-slate-500 font-medium text-xs">
                           Nessun servizio in acquisto trovato per i filtri correnti.
                         </td>
                       </tr>
@@ -476,8 +484,9 @@ export default function ServicesDashboard() {
               <form onSubmit={handleSaveService} className="space-y-4">
                 
                 <div className="grid grid-cols-2 gap-4">
+                  {/* Etichetta cambiata in "Cliente" */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Cliente / Fornitore *</label>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Cliente *</label>
                     <select 
                       className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
                       value={clientId}
@@ -491,17 +500,30 @@ export default function ServicesDashboard() {
                     </select>
                   </div>
 
+                  {/* Etichetta "Cliente/Fornitore" per la nuova colonna testo */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Tipologia Servizio *</label>
-                    <select 
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Cliente/Fornitore *</label>
+                    <input 
+                      type="text"
                       className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                      value={isVendor ? 'true' : 'false'}
-                      onChange={(e) => setIsVendor(e.target.value === 'true')}
-                    >
-                      <option value="false">Servizio in Vendita</option>
-                      <option value="true">Servizio in Acquisto (Fornitore)</option>
-                    </select>
+                      value={thirdPartyName}
+                      onChange={(e) => setThirdPartyName(e.target.value)}
+                      placeholder="Nome controparte..."
+                      required
+                    />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Tipologia Servizio *</label>
+                  <select 
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                    value={isVendor ? 'true' : 'false'}
+                    onChange={(e) => setIsVendor(e.target.value === 'true')}
+                  >
+                    <option value="false">Servizio in Vendita</option>
+                    <option value="true">Servizio in Acquisto (Fornitore)</option>
+                  </select>
                 </div>
 
                 {/* Selezione Codice CPA */}
