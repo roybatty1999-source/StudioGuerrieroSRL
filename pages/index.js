@@ -1515,7 +1515,7 @@ export default function InvoiceDashboard() {
                     </div>
                   </div>
 
-                  {/* Tabella Dettaglio Fatture ESCLUSIVA per la STAMPA (3. Elenco Fatture Non Pagate) */}
+                  {/* Tabella Dettaglio Fatture ESCLUSIVA per la STAMPA (3. Elenco Fatture Non Pagate con Numero, Data, Imponibile, IVA, Incasso, Data pagamento) */}
                   <div className="hidden print:block bg-white rounded-xl overflow-hidden mt-2">
                     <div className="print-section-header">
                       3. Elenco Fatture Non Pagate
@@ -1524,10 +1524,12 @@ export default function InvoiceDashboard() {
                       <table>
                         <thead>
                           <tr>
-                            <th>Anno</th>
+                            <th>N° Fattura</th>
+                            <th>Data Emissione</th>
                             <th className="text-right">Imponibile €</th>
                             <th className="text-right">IVA €</th>
                             <th className="text-right">Incasso €</th>
+                            <th className="text-center">Data di Pagamento</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1537,16 +1539,18 @@ export default function InvoiceDashboard() {
 
                             return (
                               <tr key={`print-unpaid-${item.id}`}>
-                                <td>{yearFromDate}</td>
+                                <td className="font-bold">{displayInvoiceNum}</td>
+                                <td>{formatDateToIT(item.issuedate)}</td>
                                 <td className="text-right">{Number(item.taxableamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                 <td className="text-right">{Number(item.vatamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                 <td className="text-right font-bold">{Number(item.totalamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="text-center text-slate-500 italic">-</td>
                               </tr>
                             )
                           })}
                           {prospectInvoices.filter(item => !item.paymentdate).length === 0 && (
                             <tr>
-                              <td colSpan="4" className="py-3 text-center text-slate-500">Nessuna fattura non pagata presente per questo cliente.</td>
+                              <td colSpan="6" className="py-3 text-center text-slate-500">Nessuna fattura non pagata presente per questo cliente.</td>
                             </tr>
                           )}
                         </tbody>
