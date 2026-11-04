@@ -824,11 +824,11 @@ export default function InvoiceDashboard() {
         `}} />
       </Head>
       
-      <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-4 sm:p-8">
-        <div className="max-w-7xl mx-auto space-y-6 no-print">
+      <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-4 sm:p-8 flex flex-col">
+        <div className="max-w-7xl mx-auto w-full space-y-6 no-print flex flex-col flex-1">
           
-          {/* Header con menu a tendina e pulsanti */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl relative z-20">
+          {/* Header con menu a tendina e pulsanti (Fisso) */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl relative z-20 shrink-0">
             <div>
               <h1 className="text-3xl font-extrabold text-white tracking-tight">Gestionale Fatture</h1>
               <p className="text-slate-400 text-sm mt-1">Gestisci, filtra ed emetti le tue fatture in modo semplice</p>
@@ -899,8 +899,8 @@ export default function InvoiceDashboard() {
             </div>
           </div>
 
-          {/* Bar Filtri (Inclusi Anno, Stato Pagamento e Pulsante Controllo) */}
-          <div className="bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-lg flex flex-col md:flex-row gap-4 items-end">
+          {/* Bar Filtri (Fisso) */}
+          <div className="bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-lg flex flex-col md:flex-row gap-4 items-end shrink-0">
             <div className="flex-1 w-full">
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Cliente</label>
               <select 
@@ -958,12 +958,12 @@ export default function InvoiceDashboard() {
             </div>
           </div>
 
-          {/* Tabella Fatture */}
-          <div className="bg-slate-800 rounded-2xl border border-slate-700 shadow-xl overflow-hidden">
-            <div className="overflow-x-auto">
+          {/* Tabella Fatture con Scorrimento Verticale e Intestazione Sticky */}
+          <div className="bg-slate-800 rounded-2xl border border-slate-700 shadow-xl overflow-hidden flex flex-col flex-1 max-h-[55vh]">
+            <div className="overflow-x-auto overflow-y-auto flex-1">
               <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-950/50 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
+                <thead className="bg-slate-900 text-slate-300 text-xs uppercase tracking-wider sticky top-0 z-10 shadow-md">
+                  <tr>
                     <th className="py-4 px-6">N° Fattura</th>
                     <th className="py-4 px-6">Data Emissione</th>
                     <th className="py-4 px-6">Data Pagamento</th>
@@ -1092,10 +1092,10 @@ export default function InvoiceDashboard() {
                 </div>
               </div>
 
-              {/* Tabella Fatture filtrate nel Controllo (rimosso 'sticky top-0' per evitare sovrapposizioni) */}
-              <div className="overflow-y-auto flex-1 border border-slate-700 rounded-xl">
+              {/* Tabella Fatture filtrate nel Controllo con intestazione sticky e sfondo solido */}
+              <div className="overflow-y-auto flex-1 border border-slate-700 rounded-xl relative">
                 <table className="w-full text-left border-collapse">
-                  <thead className="bg-slate-950/90 text-slate-400 text-xs uppercase">
+                  <thead className="sticky top-0 bg-slate-900 text-slate-300 text-xs uppercase z-10 shadow-md">
                     <tr>
                       <th className="p-3">Data</th>
                       <th className="p-3">N° Fattura</th>
