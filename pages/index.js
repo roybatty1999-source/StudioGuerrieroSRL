@@ -146,9 +146,14 @@ async function loadCpaCodes() {
   async function handleSaveService(e) {
     e.preventDefault()
 
-    if (serviceDescription.trim().length < 50) {
-      alert('La descrizione del servizio deve contenere almeno 50 caratteri.')
-      return
+    const payload = {
+      clientid: clientId,
+      thirdpartyname: thirdPartyName.trim(),
+      isvendor: isVendor,
+      servicedescription: serviceDescription.trim(),
+      cpacode: cpaCode.trim(),
+      delivery,
+      collectiontype: collectionType
     }
 
     const payload = {
