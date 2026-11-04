@@ -122,6 +122,18 @@ export default function InvoiceDashboard() {
   const controlTotalVat = controlFilteredInvoices.reduce((sum, item) => sum + (Number(item.vatamount) || 0), 0)
   const controlTotalCollection = controlFilteredInvoices.reduce((sum, item) => sum + (Number(item.totalamount) || 0), 0)
 
+  // Calcoli specifici per Fatture Pagate (nella modale Controllo)
+  const controlPaidInvoices = controlFilteredInvoices.filter(item => item.paymentdate != null)
+  const controlPaidTaxable = controlPaidInvoices.reduce((sum, item) => sum + (Number(item.taxableamount) || 0), 0)
+  const controlPaidVat = controlPaidInvoices.reduce((sum, item) => sum + (Number(item.vatamount) || 0), 0)
+  const controlPaidCollection = controlPaidInvoices.reduce((sum, item) => sum + (Number(item.totalamount) || 0), 0)
+
+  // Calcoli specifici per Fatture Non Pagate (nella modale Controllo)
+  const controlUnpaidInvoices = controlFilteredInvoices.filter(item => item.paymentdate == null)
+  const controlUnpaidTaxable = controlUnpaidInvoices.reduce((sum, item) => sum + (Number(item.taxableamount) || 0), 0)
+  const controlUnpaidVat = controlUnpaidInvoices.reduce((sum, item) => sum + (Number(item.vatamount) || 0), 0)
+  const controlUnpaidCollection = controlUnpaidInvoices.reduce((sum, item) => sum + (Number(item.totalamount) || 0), 0)
+
   // Gestione sicura del caricamento e renderizzazione del grafico nella modale Gestione
   useEffect(() => {
     if (isManagementOpen) {
@@ -1132,24 +1144,69 @@ export default function InvoiceDashboard() {
                 </table>
               </div>
 
-              {/* Sezione Totali in basso con N. Fatture iniziale come primo dato */}
-              <div className="bg-slate-900 p-4 rounded-xl border border-slate-700 grid grid-cols-1 sm:grid-cols-4 gap-4 text-center">
-                <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
-                  <span className="block text-xs font-semibold text-slate-400 uppercase">N. Fatture</span>
-                  <span className="text-lg font-bold font-mono text-white">{controlFilteredInvoices.length}</span>
+              {/* Sezione Totali in basso, con riga generale, riga pagate e riga non pagate */}
+              <div className="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-3">
+                
+                {/* 1. Totale Complessivo */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-center">
+                  <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                    <span className="block text-xs font-semibold text-slate-400 uppercase">N. Fatture</span>
+                    <span className="text-lg font-bold font-mono text-white">{controlFilteredInvoices.length}</span>
+                  </div>
+                  <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                    <span className="block text-xs font-semibold text-slate-400 uppercase">Totale Imponibile</span>
+                    <span className="text-lg font-bold font-mono text-indigo-400">€ {controlTotalTaxable.toFixed(2)}</span>
+                  </div>
+                  <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                    <span className="block text-xs font-semibold text-slate-400 uppercase">Totale IVA</span>
+                    <span className="text-lg font-bold font-mono text-amber-400">€ {controlTotalVat.toFixed(2)}</span>
+                  </div>
+                  <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                    <span className="block text-xs font-semibold text-slate-400 uppercase">Totale Incasso</span>
+                    <span className="text-lg font-bold font-mono text-emerald-400">€ {controlTotalCollection.toFixed(2)}</span>
+                  </div>
                 </div>
-                <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
-                  <span className="block text-xs font-semibold text-slate-400 uppercase">Totale Imponibile</span>
-                  <span className="text-lg font-bold font-mono text-indigo-400">€ {controlTotalTaxable.toFixed(2)}</span>
+
+                {/* 2. Totale Fatture Pagate */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-center border-t border-slate-800 pt-3">
+                  <div className="bg-slate-800/60 p-2.5 rounded-lg border border-emerald-500/20">
+                    <span className="block text-[10px] font-semibold text-emerald-400 uppercase">🟢 Pagate (N.)</span>
+                    <span className="text-base font-bold font-mono text-white">{controlPaidInvoices.length}</span>
+                  </div>
+                  <div className="bg-slate-800/60 p-2.5 rounded-lg border border-emerald-500/20">
+                    <span className="block text-[10px] font-semibold text-emerald-400 uppercase">Imponibile Pagato</span>
+                    <span className="text-base font-bold font-mono text-indigo-300">€ {controlPaidTaxable.toFixed(2)}</span>
+                  </div>
+                  <div className="bg-slate-800/60 p-2.5 rounded-lg border border-emerald-500/20">
+                    <span className="block text-[10px] font-semibold text-emerald-400 uppercase">IVA Pagata</span>
+                    <span className="text-base font-bold font-mono text-amber-300">€ {controlPaidVat.toFixed(2)}</span>
+                  </div>
+                  <div className="bg-slate-800/60 p-2.5 rounded-lg border border-emerald-500/20">
+                    <span className="block text-[10px] font-semibold text-emerald-400 uppercase">Incasso Pagato</span>
+                    <span className="text-base font-bold font-mono text-emerald-400">€ {controlPaidCollection.toFixed(2)}</span>
+                  </div>
                 </div>
-                <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
-                  <span className="block text-xs font-semibold text-slate-400 uppercase">Totale IVA</span>
-                  <span className="text-lg font-bold font-mono text-amber-400">€ {controlTotalVat.toFixed(2)}</span>
+
+                {/* 3. Totale Fatture Non Pagate */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-center border-t border-slate-800 pt-3">
+                  <div className="bg-slate-800/60 p-2.5 rounded-lg border border-rose-500/20">
+                    <span className="block text-[10px] font-semibold text-rose-400 uppercase">🔴 Non Pagate (N.)</span>
+                    <span className="text-base font-bold font-mono text-white">{controlUnpaidInvoices.length}</span>
+                  </div>
+                  <div className="bg-slate-800/60 p-2.5 rounded-lg border border-rose-500/20">
+                    <span className="block text-[10px] font-semibold text-rose-400 uppercase">Imponibile Da Incassare</span>
+                    <span className="text-base font-bold font-mono text-indigo-300">€ {controlUnpaidTaxable.toFixed(2)}</span>
+                  </div>
+                  <div className="bg-slate-800/60 p-2.5 rounded-lg border border-rose-500/20">
+                    <span className="block text-[10px] font-semibold text-rose-400 uppercase">IVA Da Incassare</span>
+                    <span className="text-base font-bold font-mono text-amber-300">€ {controlUnpaidVat.toFixed(2)}</span>
+                  </div>
+                  <div className="bg-slate-800/60 p-2.5 rounded-lg border border-rose-500/20">
+                    <span className="block text-[10px] font-semibold text-rose-400 uppercase">Totale Da Incassare</span>
+                    <span className="text-base font-bold font-mono text-rose-400">€ {controlUnpaidCollection.toFixed(2)}</span>
+                  </div>
                 </div>
-                <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
-                  <span className="block text-xs font-semibold text-slate-400 uppercase">Totale Incasso</span>
-                  <span className="text-lg font-bold font-mono text-emerald-400">€ {controlTotalCollection.toFixed(2)}</span>
-                </div>
+
               </div>
 
               {/* Footer Chiusura */}
