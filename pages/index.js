@@ -36,6 +36,10 @@ export default function InvoiceDashboard() {
   const [filterYear, setFilterYear] = useState('2026')
   const [paymentFilter, setPaymentFilter] = useState('ALL')
 
+  // Stato per la ricerca testuale del cliente nel filtro principale
+  const [clientSearchQuery, setClientSearchQuery] = useState('')
+  const [clientDropdownOpen, setClientDropdownOpen] = useState(false)
+
   // Stati per la finestra e i filtri di Controllo
   const [controlModalOpen, setControlModalOpen] = useState(false)
   const [controlYear, setControlYear] = useState('2026')
@@ -69,6 +73,8 @@ export default function InvoiceDashboard() {
   // Stati per la vista Prospetto Cliente
   const [isProspectOpen, setIsProspectOpen] = useState(false)
   const [prospectClientId, setProspectClientId] = useState('')
+  const [prospectClientSearch, setProspectClientSearch] = useState('')
+  const [prospectDropdownOpen, setProspectDropdownOpen] = useState(false)
   const [prospectInvoices, setProspectInvoices] = useState([])
   const [prospectFilterYear, setProspectFilterYear] = useState('')
   const [prospectFilterStatus, setProspectFilterStatus] = useState('all')
@@ -80,6 +86,9 @@ export default function InvoiceDashboard() {
 
   // Campi del form inserimento/modifica fattura
   const [selectedClientId, setSelectedClientId] = useState('')
+  const [invoiceClientSearch, setInvoiceClientSearch] = useState('')
+  const [invoiceClientDropdownOpen, setInvoiceClientDropdownOpen] = useState(false)
+
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [taxableAmount, setTaxableAmount] = useState('')
   const [vatAmount, setVatAmount] = useState('')
@@ -125,7 +134,7 @@ export default function InvoiceDashboard() {
     return true
   })
 
-  // Calcoli per i totali della modale di Controllo basati ESATTAMENTE sul filtro Anno/Mese (controlBaseFilteredInvoices)
+  // Calcoli per i totali della modale di Controllo basati ESATTAMENTE sul filtro Anno/Mese
   const controlTotalTaxable = controlBaseFilteredInvoices.reduce((sum, item) => sum + (Number(item.taxableamount) || 0), 0)
   const controlTotalVat = controlBaseFilteredInvoices.reduce((sum, item) => sum + (Number(item.vatamount) || 0), 0)
   const controlTotalCollection = controlBaseFilteredInvoices.reduce((sum, item) => sum + (Number(item.totalamount) || 0), 0)
@@ -479,6 +488,7 @@ export default function InvoiceDashboard() {
       }
       if (data && data.length > 0) {
         setSelectedClientId(data[0].id)
+        setInvoiceClientSearch(data[0].name)
       }
     }
 
@@ -642,6 +652,7 @@ export default function InvoiceDashboard() {
     setIsEditMode(false)
     setCurrentInvoiceId(null)
     setSelectedClientId('')
+    setInvoiceClientSearch('')
     setTaxableAmount('')
     setVatAmount('')
     setTotalAmount('')
@@ -660,6 +671,10 @@ export default function InvoiceDashboard() {
     setIsEditMode(true)
     setCurrentInvoiceId(invoiceItem.id)
     setSelectedClientId(invoiceItem.clientid)
+    
+    const clientFound = clientsList.find(c => c.id === invoiceItem.clientid)
+    setInvoiceClientSearch(clientFound ? clientFound.name : '')
+
     setInvoiceNumber(invoiceItem.invoicenumber != null ? invoiceItem.invoicenumber.toString() : '')
     setTaxableAmount(invoiceItem.taxableamount != null ? invoiceItem.taxableamount.toString() : '')
     setVatAmount(invoiceItem.vatamount != null ? invoiceItem.vatamount.toString() : '')
@@ -672,6 +687,11 @@ export default function InvoiceDashboard() {
 
   async function handleSaveInvoice(event) {
     event.preventDefault()
+
+    if (!selectedClientId) {
+      alert("Seleziona un cliente valido dall'elenco dei suggerimenti.")
+      return
+    }
 
     const invoicePayload = {
       invoicenumber: invoiceNumber ? Number(invoiceNumber) : null,
@@ -919,28 +939,80 @@ export default function InvoiceDashboard() {
             </div>
           </div>
 
-          {/* Bar Filtri (Fisso) */}
+          {/* Bar Filtri (Fisso) con Autocomplete Cliente */}
           <div className="bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-lg flex flex-col md:flex-row gap-4 items-end shrink-0">
-            <div className="flex-1 w-full">
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Cliente</label>
-              <select 
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                value={filterClient}
-                onChange={(e) => setFilterClient(e.target.value)}
-              >
-                <option value="">Tutti i clienti ({clientsList.length})</option>
-                {clientsList.map((clientItem) => (
-                  <option key={clientItem.id} value={clientItem.id}>
-                    {clientItem.name}
-                  </option>
-                ))}
-              </select>
+            
+            {/* Campo di Ricerca Autocomplete per Filtro Principale */}
+            <div className="flex-1 w-full relative">
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Cliente (Digita per cercare)</label>
+              <div className="relative">
+                <input 
+                  type="text"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm"
+                  placeholder="Es. GRU o nome cliente..."
+                  value={clientSearchQuery}
+                  onChange={(e) => {
+                    setClientSearchQuery(e.target.value)
+                    setClientDropdownOpen(true)
+                    if (e.target.value === '') {
+                      setFilterClient('')
+                    }
+                  }}
+                  onFocus={() => setClientDropdownOpen(true)}
+                />
+                {filterClient && (
+                  <button 
+                    onClick={() => {
+                      setFilterClient('')
+                      setClientSearchQuery('')
+                    }}
+                    className="absolute right-3 top-3.5 text-slate-400 hover:text-white text-xs font-bold"
+                    title="Cancella filtro cliente"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Dropdown dei suggerimenti per il filtro principale */}
+              {clientDropdownOpen && (
+                <div className="absolute left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-30">
+                  <div 
+                    onClick={() => {
+                      setFilterClient('')
+                      setClientSearchQuery('')
+                      setClientDropdownOpen(false)
+                    }}
+                    className="px-4 py-2.5 text-sm text-slate-400 hover:bg-slate-800 hover:text-white cursor-pointer border-b border-slate-800"
+                  >
+                    -- Tutti i clienti --
+                  </div>
+                  {clientsList
+                    .filter(c => c.name.toLowerCase().includes(clientSearchQuery.toLowerCase()))
+                    .map(clientItem => (
+                      <div 
+                        key={clientItem.id}
+                        onClick={() => {
+                          setFilterClient(clientItem.id)
+                          setClientSearchQuery(clientItem.name)
+                          setClientDropdownOpen(false)
+                        }}
+                        className="px-4 py-2.5 text-sm text-slate-200 hover:bg-slate-800 hover:text-white cursor-pointer"
+                      >
+                        {clientItem.name}
+                      </div>
+                    ))}
+                  {clientsList.filter(c => c.name.toLowerCase().includes(clientSearchQuery.toLowerCase())).length === 0 && (
+                    <div className="px-4 py-2.5 text-sm text-slate-500 italic">Nessun cliente trovato</div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="w-full md:w-48">
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Anno di emissione</label>
               <select 
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm"
                 value={filterYear}
                 onChange={(e) => setFilterYear(e.target.value)}
               >
@@ -953,11 +1025,11 @@ export default function InvoiceDashboard() {
               </select>
             </div>
 
-            {/* Filtro Stato Pagamento a fianco dell'Anno */}
+            {/* Filtro Stato Pagamento */}
             <div className="w-full md:w-48">
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Stato Pagamento</label>
               <select 
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm"
                 value={paymentFilter}
                 onChange={(e) => setPaymentFilter(e.target.value)}
               >
@@ -1126,7 +1198,7 @@ export default function InvoiceDashboard() {
                 </div>
               </div>
 
-              {/* Tabella Fatture filtrate nella modale (risponde anche allo stato di pagamento) */}
+              {/* Tabella Fatture filtrate nella modale */}
               <div className="overflow-y-auto flex-1 border border-slate-700 rounded-xl relative min-h-[220px]">
                 <table className="w-full text-left border-collapse">
                   <thead className="sticky top-0 bg-slate-900 text-slate-300 text-[11px] uppercase z-10 shadow-md">
@@ -1166,7 +1238,7 @@ export default function InvoiceDashboard() {
                 </table>
               </div>
 
-              {/* Sezione Totali in basso (Indipendenti dal filtro di stato, basati solo su Anno e Mese) */}
+              {/* Sezione Totali in basso */}
               <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-700 space-y-1.5 shrink-0">
                 
                 {/* 1. Totale Complessivo */}
@@ -1466,7 +1538,7 @@ export default function InvoiceDashboard() {
           </div>
         )}
 
-        {/* Modal Prospetto Cliente */}
+        {/* Modal Prospetto Cliente con Autocomplete */}
         {isProspectOpen && (
           <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
             <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-6xl w-full shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto printable-prospect-container">
@@ -1512,25 +1584,61 @@ export default function InvoiceDashboard() {
                 </div>
               </div>
 
-              {/* Selezione Cliente per il Prospetto */}
-              <div className="bg-slate-900 p-4 rounded-xl border border-slate-700 max-w-md no-print">
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Seleziona Cliente</label>
-                <select 
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  value={prospectClientId}
-                  onChange={(e) => {
-                    setProspectClientId(e.target.value)
-                    setProspectFilterYear('')
-                    setProspectFilterStatus('all')
-                  }}
-                >
-                  <option value="">-- Scegli un cliente --</option>
-                  {clientsList.map((clientItem) => (
-                    <option key={clientItem.id} value={clientItem.id}>
-                      {clientItem.name}
-                    </option>
-                  ))}
-                </select>
+              {/* Selezione Cliente con Autocomplete per il Prospetto */}
+              <div className="bg-slate-900 p-4 rounded-xl border border-slate-700 max-w-md no-print relative">
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Cerca Cliente (es. GRU)</label>
+                <div className="relative">
+                  <input 
+                    type="text"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                    placeholder="Digita per cercare un cliente..."
+                    value={prospectClientSearch}
+                    onChange={(e) => {
+                      setProspectClientSearch(e.target.value)
+                      setProspectDropdownOpen(true)
+                      if (e.target.value === '') {
+                        setProspectClientId('')
+                      }
+                    }}
+                    onFocus={() => setProspectDropdownOpen(true)}
+                  />
+                  {prospectClientId && (
+                    <button 
+                      onClick={() => {
+                        setProspectClientId('')
+                        setProspectClientSearch('')
+                      }}
+                      className="absolute right-3 top-3.5 text-slate-400 hover:text-white text-xs font-bold"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {prospectDropdownOpen && (
+                  <div className="absolute left-4 right-4 mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-30">
+                    {clientsList
+                      .filter(c => c.name.toLowerCase().includes(prospectClientSearch.toLowerCase()))
+                      .map(clientItem => (
+                        <div 
+                          key={`pros-sug-${clientItem.id}`}
+                          onClick={() => {
+                            setProspectClientId(clientItem.id)
+                            setProspectClientSearch(clientItem.name)
+                            setProspectDropdownOpen(false)
+                            setProspectFilterYear('')
+                            setProspectFilterStatus('all')
+                          }}
+                          className="px-4 py-2.5 text-sm text-slate-200 hover:bg-slate-700 hover:text-white cursor-pointer"
+                        >
+                          {clientItem.name}
+                        </div>
+                      ))}
+                    {clientsList.filter(c => c.name.toLowerCase().includes(prospectClientSearch.toLowerCase())).length === 0 && (
+                      <div className="px-4 py-2.5 text-sm text-slate-500 italic">Nessun cliente trovato</div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {prospectClientId ? (
@@ -1835,7 +1943,7 @@ export default function InvoiceDashboard() {
           </div>
         )}
 
-        {/* Modal Modifica/Inserimento Fattura */}
+        {/* Modal Modifica/Inserimento Fattura con Autocomplete Cliente */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
             <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-6">
@@ -1852,21 +1960,46 @@ export default function InvoiceDashboard() {
               </div>
 
               <form onSubmit={handleSaveInvoice} className="space-y-4">
-                <div>
+                
+                {/* Campo Autocomplete Cliente in inserimento/modifica */}
+                <div className="relative">
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Cliente *</label>
-                  <select 
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
-                    value={selectedClientId}
-                    onChange={(e) => setSelectedClientId(e.target.value)}
+                  <input 
+                    type="text"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                    placeholder="Digita per cercare un cliente (es. GRU)..."
+                    value={invoiceClientSearch}
+                    onChange={(e) => {
+                      setInvoiceClientSearch(e.target.value)
+                      setInvoiceClientDropdownOpen(true)
+                      setSelectedClientId('') // Reset finché non seleziona un suggerimento valido
+                    }}
+                    onFocus={() => setInvoiceClientDropdownOpen(true)}
                     required
-                  >
-                    <option value="">Seleziona un cliente...</option>
-                    {clientsList.map((clientItem) => (
-                      <option key={clientItem.id} value={clientItem.id}>
-                        {clientItem.name}
-                      </option>
-                    ))}
-                  </select>
+                  />
+
+                  {invoiceClientDropdownOpen && (
+                    <div className="absolute left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-40">
+                      {clientsList
+                        .filter(c => c.name.toLowerCase().includes(invoiceClientSearch.toLowerCase()))
+                        .map(clientItem => (
+                          <div 
+                            key={`inv-sug-${clientItem.id}`}
+                            onClick={() => {
+                              setSelectedClientId(clientItem.id)
+                              setInvoiceClientSearch(clientItem.name)
+                              setInvoiceClientDropdownOpen(false)
+                            }}
+                            className="px-4 py-2.5 text-sm text-slate-200 hover:bg-slate-800 hover:text-white cursor-pointer"
+                          >
+                            {clientItem.name}
+                          </div>
+                        ))}
+                      {clientsList.filter(c => c.name.toLowerCase().includes(invoiceClientSearch.toLowerCase())).length === 0 && (
+                        <div className="px-4 py-2.5 text-sm text-slate-500 italic">Nessun cliente trovato</div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
