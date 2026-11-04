@@ -335,7 +335,7 @@ export default function ServicesDashboard() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-950/50 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
-                      <th className="py-3 px-6">Cliente / Fornitore</th>
+                      <th className="py-3 px-6">Cliente</th>
                       <th className="py-3 px-6">Descrizione Servizio</th>
                       <th className="py-3 px-6">Codice CPA</th>
                       <th className="py-3 px-6 text-center">Erogazione</th>
@@ -404,7 +404,7 @@ export default function ServicesDashboard() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-950/50 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
-                      <th className="py-3 px-6">Cliente / Fornitore</th>
+                      <th className="py-3 px-6">Fornitore</th>
                       <th className="py-3 px-6">Descrizione Servizio</th>
                       <th className="py-3 px-6">Codice CPA</th>
                       <th className="py-3 px-6 text-center">Erogazione</th>
