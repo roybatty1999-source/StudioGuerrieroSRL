@@ -104,7 +104,7 @@ export default function ServicesDashboard() {
   }
 
   // --- GESTIONE SERVIZI ---
- function openInsertModal() {
+  function openInsertModal() {
     setIsEditMode(false)
     setCurrentServiceId(null)
     setClientId('')
@@ -139,17 +139,6 @@ export default function ServicesDashboard() {
     setDelivery(service.delivery)
     setCollectionType(service.collectiontype)
     setIsModalOpen(true)
-  }
-
-  async function handleDeleteService(id) {
-    if (confirm('Sei sicuro di voler eliminare questo servizio?')) {
-      const { error } = await supabaseClient.from('services').delete().eq('id', id)
-      if (error) {
-        alert("Errore durante l'eliminazione: " + error.message)
-      } else {
-        loadServices()
-      }
-    }
   }
 
   function handleSelectCpaItem(item) {
@@ -374,55 +363,49 @@ export default function ServicesDashboard() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-950/50 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
-                      <th className="py-3 px-6">Cliente</th>
-                      <th className="py-3 px-6">Cliente/Fornitore</th>
-                      <th className="py-3 px-6">Descrizione Servizio</th>
-                      <th className="py-3 px-6">Codice CPA</th>
-                      <th className="py-3 px-6 text-center">Erogazione</th>
-                      <th className="py-3 px-6 text-center">Incasso</th>
-                      <th className="py-3 px-6 text-right">Azioni</th>
+                      <th className="py-2.5 px-4">Cliente</th>
+                      <th className="py-2.5 px-4">Cliente/Fornitore</th>
+                      <th className="py-2.5 px-4">Descrizione Servizio</th>
+                      <th className="py-2.5 px-4">Codice CPA</th>
+                      <th className="py-2.5 px-4 text-center">Erogazione</th>
+                      <th className="py-2.5 px-4 text-center">Incasso</th>
+                      <th className="py-2.5 px-4 text-right">Azioni</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-700/50 text-sm">
+                  <tbody className="divide-y divide-slate-700/50 text-xs sm:text-sm">
                     {salesServices.map((item) => (
                       <tr key={item.id} className="hover:bg-slate-700/30 transition-colors">
-                        <td className="py-3 px-6 font-medium text-white">
+                        <td className="py-2 px-4 font-medium text-white">
                           {item.clients?.name || 'Sconosciuto'}
                         </td>
-                        <td className="py-3 px-6 text-slate-300">
+                        <td className="py-2 px-4 text-slate-300">
                           {item.thirdpartyname || '-'}
                         </td>
-                        <td className="py-3 px-6 text-slate-300 max-w-xs truncate" title={item.servicedescription}>
+                        <td className="py-2 px-4 text-slate-300 max-w-xs truncate" title={item.servicedescription}>
                           {item.servicedescription}
                         </td>
-                        <td className="py-3 px-6 font-mono text-indigo-400 font-semibold">
+                        <td className="py-2 px-4 font-mono text-indigo-400 font-semibold">
                           {item.cpacode}
                         </td>
-                        <td className="py-3 px-6 text-center font-bold text-slate-200">
+                        <td className="py-2 px-4 text-center font-bold text-slate-200">
                           {item.delivery}
                         </td>
-                        <td className="py-3 px-6 text-center font-bold text-slate-200">
+                        <td className="py-2 px-4 text-center font-bold text-slate-200">
                           {item.collectiontype}
                         </td>
-                        <td className="py-3 px-6 text-right space-x-2">
+                        <td className="py-2 px-4 text-right">
                           <button 
                             onClick={() => openEditModal(item)}
                             className="bg-slate-700 hover:bg-amber-600/80 text-amber-300 hover:text-white px-3 py-1.5 rounded-lg font-medium text-xs border border-amber-500/30 transition-all"
                           >
                             Modifica
                           </button>
-                          <button 
-                            onClick={() => handleDeleteService(item.id)}
-                            className="bg-slate-700 hover:bg-rose-600/80 text-rose-300 hover:text-white px-3 py-1.5 rounded-lg font-medium text-xs border border-rose-500/30 transition-all"
-                          >
-                            Cancella
-                          </button>
                         </td>
                       </tr>
                     ))}
                     {salesServices.length === 0 && (
                       <tr>
-                        <td colSpan="7" className="py-8 text-center text-slate-500 font-medium text-xs">
+                        <td colSpan="7" className="py-6 text-center text-slate-500 font-medium text-xs">
                           Nessun servizio in vendita trovato per i filtri correnti.
                         </td>
                       </tr>
@@ -447,55 +430,49 @@ export default function ServicesDashboard() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-950/50 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
-                      <th className="py-3 px-6">Cliente</th>
-                      <th className="py-3 px-6">Cliente/Fornitore</th>
-                      <th className="py-3 px-6">Descrizione Servizio</th>
-                      <th className="py-3 px-6">Codice CPA</th>
-                      <th className="py-3 px-6 text-center">Erogazione</th>
-                      <th className="py-3 px-6 text-center">Incasso</th>
-                      <th className="py-3 px-6 text-right">Azioni</th>
+                      <th className="py-2.5 px-4">Cliente</th>
+                      <th className="py-2.5 px-4">Cliente/Fornitore</th>
+                      <th className="py-2.5 px-4">Descrizione Servizio</th>
+                      <th className="py-2.5 px-4">Codice CPA</th>
+                      <th className="py-2.5 px-4 text-center">Erogazione</th>
+                      <th className="py-2.5 px-4 text-center">Incasso</th>
+                      <th className="py-2.5 px-4 text-right">Azioni</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-700/50 text-sm">
+                  <tbody className="divide-y divide-slate-700/50 text-xs sm:text-sm">
                     {purchaseServices.map((item) => (
                       <tr key={item.id} className="hover:bg-slate-700/30 transition-colors">
-                        <td className="py-3 px-6 font-medium text-white">
+                        <td className="py-2 px-4 font-medium text-white">
                           {item.clients?.name || 'Sconosciuto'}
                         </td>
-                        <td className="py-3 px-6 text-slate-300">
+                        <td className="py-2 px-4 text-slate-300">
                           {item.thirdpartyname || '-'}
                         </td>
-                        <td className="py-3 px-6 text-slate-300 max-w-xs truncate" title={item.servicedescription}>
+                        <td className="py-2 px-4 text-slate-300 max-w-xs truncate" title={item.servicedescription}>
                           {item.servicedescription}
                         </td>
-                        <td className="py-3 px-6 font-mono text-indigo-400 font-semibold">
+                        <td className="py-2 px-4 font-mono text-indigo-400 font-semibold">
                           {item.cpacode}
                         </td>
-                        <td className="py-3 px-6 text-center font-bold text-slate-200">
+                        <td className="py-2 px-4 text-center font-bold text-slate-200">
                           {item.delivery}
                         </td>
-                        <td className="py-3 px-6 text-center font-bold text-slate-200">
+                        <td className="py-2 px-4 text-center font-bold text-slate-200">
                           {item.collectiontype}
                         </td>
-                        <td className="py-3 px-6 text-right space-x-2">
+                        <td className="py-2 px-4 text-right">
                           <button 
                             onClick={() => openEditModal(item)}
                             className="bg-slate-700 hover:bg-amber-600/80 text-amber-300 hover:text-white px-3 py-1.5 rounded-lg font-medium text-xs border border-amber-500/30 transition-all"
                           >
                             Modifica
                           </button>
-                          <button 
-                            onClick={() => handleDeleteService(item.id)}
-                            className="bg-slate-700 hover:bg-rose-600/80 text-rose-300 hover:text-white px-3 py-1.5 rounded-lg font-medium text-xs border border-rose-500/30 transition-all"
-                          >
-                            Cancella
-                          </button>
                         </td>
                       </tr>
                     ))}
                     {purchaseServices.length === 0 && (
                       <tr>
-                        <td colSpan="7" className="py-8 text-center text-slate-500 font-medium text-xs">
+                        <td colSpan="7" className="py-6 text-center text-slate-500 font-medium text-xs">
                           Nessun servizio in acquisto trovato per i filtri correnti.
                         </td>
                       </tr>
