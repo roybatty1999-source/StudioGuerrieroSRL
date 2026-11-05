@@ -693,14 +693,22 @@ export default function InvoiceDashboard() {
       return
     }
 
-const invoicePayload = {
+async function handleSaveInvoice(event) {
+    event.preventDefault()
+
+    if (!selectedClientId) {
+      alert("Seleziona un cliente valido dall'elenco dei suggerimenti.")
+      return
+    }
+
+    // Inviamo solo l'imponibile a Supabase per lasciare che il database
+    // applichi le sue regole di DEFAULT per IVA e Incasso Totale.
+    const invoicePayload = {
       invoicenumber: invoiceNumber ? Number(invoiceNumber) : null,
       clientid: selectedClientId,
       issuedate: invoiceDate,
       paymentdate: paymentDate || null,
       taxableamount: taxableAmount !== '' ? Number(taxableAmount) : null,
-      vatamount: vatAmount !== '' ? Number(vatAmount) : null,
-      totalamount: totalAmount !== '' ? Number(totalAmount) : null,
       note: invoiceNotes || null
     }
 
