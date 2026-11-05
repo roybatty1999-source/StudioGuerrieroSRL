@@ -664,7 +664,7 @@ export default function ServicesDashboard() {
                       onChange={(e) => setCollectionType(e.target.value)}
                       required
                     >
-                      <option value="A">R (Rimessa diretta)</option>
+                      <option value="A">A (Rimessa diretta)</option>
                       <option value="B">B (Bonifico bancario)</option>
                       <option value="X">X (Altro)</option>
                     </select>
