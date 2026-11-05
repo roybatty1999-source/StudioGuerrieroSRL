@@ -241,59 +241,64 @@ export default function ServicesDashboard() {
         <script src="https://cdn.tailwindcss.com"></script>
       </Head>
 
-      <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-4 sm:p-8">
-        <div className="max-w-7xl mx-auto space-y-6">
+      {/* Sfondo stile foglio di calcolo / Excel */}
+      <div className="min-h-screen bg-slate-100 text-slate-800 font-sans p-3 sm:p-5">
+        <div className="max-w-[98%] mx-auto space-y-4">
           
-          {/* Header Principale */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
-            <div>
-              <h1 className="text-3xl font-extrabold text-white tracking-tight">Gestione Servizi</h1>
-              <p className="text-slate-400 text-sm mt-1">
-                Cliente: <span className="text-indigo-400 font-semibold">{currentSelectedClientName}</span> | Codice CPA: <span className="text-indigo-400 font-semibold">{currentSelectedCpaName}</span>
-              </p>
+          {/* Header Principale in stile Toolbar Excel */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-3 rounded border border-slate-300 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-700 text-white font-bold px-2.5 py-1 rounded text-sm tracking-wider font-mono">EXCEL</div>
+              <div>
+                <h1 className="text-xl font-bold text-slate-900 leading-tight">Gestione Servizi</h1>
+                <p className="text-slate-500 text-xs">
+                  Filtri attivi: <span className="font-semibold text-slate-700">{currentSelectedClientName}</span> | CPA: <span className="font-semibold text-slate-700">{currentSelectedCpaName}</span>
+                </p>
+              </div>
             </div>
             
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               
-              {/* Menu a Scomparsa "Cliente" con Autocomplete */}
+              {/* Menu a Scomparsa "Cliente" */}
               <div className="relative" ref={clientMenuRef}>
                 <button 
                   onClick={() => setShowClientMenu(!showClientMenu)}
-                  className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2.5 rounded-xl font-semibold border border-slate-600 transition-all text-sm"
+                  className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded border border-slate-300 text-xs font-medium shadow-xs"
                 >
-                  👤 Cliente: {selectedClientId === 'ALL' ? 'Tutti ▾' : `${currentSelectedClientName} ▾`}
+                  <span>👤 Cliente:</span>
+                  <span className="font-bold">{selectedClientId === 'ALL' ? 'Tutti ▾' : `${currentSelectedClientName} ▾`}</span>
                 </button>
 
                 {showClientMenu && (
-                  <div className="absolute right-0 mt-2 w-72 bg-slate-950 border border-slate-700 rounded-xl shadow-2xl p-3 z-50 space-y-2">
+                  <div className="absolute right-0 mt-1 w-72 bg-white border border-slate-300 rounded shadow-lg p-2 z-50 space-y-2">
                     <button 
                       onClick={() => { setSelectedClientId('ALL'); setShowClientMenu(false); setClientFilterSearch(''); }}
-                      className="w-full text-left px-3 py-2 text-xs text-indigo-400 font-bold hover:bg-indigo-600/35 rounded-lg transition-colors border-b border-slate-800 mb-1"
+                      className="w-full text-left px-2 py-1 text-xs text-emerald-700 font-bold hover:bg-emerald-50 rounded border border-emerald-200 text-center"
                     >
-                      🌐 Mostra Tutti i Clienti
+                      Mostra Tutti i Clienti
                     </button>
                     
                     <input 
                       type="text" 
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                      className="w-full bg-white border border-slate-300 rounded p-1.5 text-slate-800 text-xs outline-none focus:border-emerald-600"
                       placeholder="Cerca cliente..."
                       value={clientFilterSearch}
                       onChange={(e) => setClientFilterSearch(e.target.value)}
                     />
 
-                    <div className="max-h-52 overflow-y-auto space-y-1">
+                    <div className="max-h-52 overflow-y-auto divide-y divide-slate-100">
                       {filteredClientsList.map(client => (
                         <div 
                           key={client.id}
                           onClick={() => { setSelectedClientId(client.id); setShowClientMenu(false); setClientFilterSearch(''); }}
-                          className="p-2 hover:bg-indigo-600/40 cursor-pointer text-xs rounded transition-colors text-slate-200 truncate"
+                          className="p-1.5 hover:bg-slate-100 cursor-pointer text-xs text-slate-700 truncate"
                           title={client.name}
                         >
                           {client.name}
                         </div>
                       ))}
                       {filteredClientsList.length === 0 && (
-                        <div className="p-2 text-xs text-slate-500 italic text-center">Nessun cliente trovato.</div>
+                        <div className="p-2 text-xs text-slate-400 italic text-center">Nessun cliente trovato.</div>
                       )}
                     </div>
                   </div>
@@ -304,41 +309,42 @@ export default function ServicesDashboard() {
               <div className="relative" ref={cpaSearchMenuRef}>
                 <button 
                   onClick={() => setShowCpaSearchMenu(!showCpaSearchMenu)}
-                  className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2.5 rounded-xl font-semibold border border-slate-600 transition-all text-sm"
+                  className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded border border-slate-300 text-xs font-medium shadow-xs"
                 >
-                  🔍 Ricerca CPA: {selectedCpaFilter === 'ALL' ? 'Tutti ▾' : `${selectedCpaFilter} ▾`}
+                  <span>🔍 CPA:</span>
+                  <span className="font-bold">{selectedCpaFilter === 'ALL' ? 'Tutti ▾' : `${selectedCpaFilter} ▾`}</span>
                 </button>
 
                 {showCpaSearchMenu && (
-                  <div className="absolute right-0 mt-2 w-80 bg-slate-950 border border-slate-700 rounded-xl shadow-2xl p-3 z-50 space-y-2">
+                  <div className="absolute right-0 mt-1 w-80 bg-white border border-slate-300 rounded shadow-lg p-2 z-50 space-y-2">
                     <button 
                       onClick={() => { setSelectedCpaFilter('ALL'); setShowCpaSearchMenu(false); }}
-                      className="w-full text-left px-3 py-2 text-xs text-indigo-400 font-bold hover:bg-indigo-600/35 rounded-lg transition-colors border-b border-slate-800 mb-1"
+                      className="w-full text-left px-2 py-1 text-xs text-emerald-700 font-bold hover:bg-emerald-50 rounded border border-emerald-200 text-center"
                     >
-                      🌐 Mostra Tutti i Codici CPA
+                      Mostra Tutti i Codici CPA
                     </button>
                     
                     <input 
                       type="text" 
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-xs outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                      className="w-full bg-white border border-slate-300 rounded p-1.5 text-slate-800 text-xs outline-none focus:border-emerald-600 font-mono"
                       placeholder="Cerca codice o descrizione..."
                       value={cpaMenuSearchQuery}
                       onChange={(e) => setCpaMenuSearchQuery(e.target.value)}
                     />
 
-                    <div className="max-h-56 overflow-y-auto space-y-1">
+                    <div className="max-h-56 overflow-y-auto divide-y divide-slate-100">
                       {filteredCpaSearchMenu.map(item => (
                         <div 
                           key={item.code}
                           onClick={() => { setSelectedCpaFilter(item.code); setShowCpaSearchMenu(false); }}
-                          className="p-2 hover:bg-indigo-600/40 cursor-pointer text-xs rounded transition-colors"
+                          className="p-1.5 hover:bg-slate-100 cursor-pointer text-xs"
                         >
-                          <span className="font-bold text-indigo-400 font-mono mr-2">{item.code}</span>
-                          <span className="text-slate-300 line-clamp-1">{item.description}</span>
+                          <span className="font-bold text-emerald-700 font-mono mr-2">{item.code}</span>
+                          <span className="text-slate-600 line-clamp-1">{item.description}</span>
                         </div>
                       ))}
                       {filteredCpaSearchMenu.length === 0 && (
-                        <div className="p-2 text-xs text-slate-500 italic text-center">Nessun codice trovato.</div>
+                        <div className="p-2 text-xs text-slate-400 italic text-center">Nessun codice trovato.</div>
                       )}
                     </div>
                   </div>
@@ -347,61 +353,67 @@ export default function ServicesDashboard() {
 
               <button 
                 onClick={openInsertModal}
-                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-indigo-600/30 transition-all text-sm"
+                className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded font-semibold text-xs shadow-xs transition-colors"
               >
-                + Nuovo Servizio
+                + Inserisci Servizio
               </button>
             </div>
           </div>
 
           {/* SEZIONE VENDITE */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-emerald-400 flex items-center gap-2">
-                🟢 Vendite <span className="text-xs bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-0.5 rounded-full text-emerald-300">Il cliente è fornitore</span>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between px-1">
+              <h2 className="text-xs font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-2">
+                <span>🟢 TABELLA VENDITE</span>
+                <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-300 normal-case font-normal">
+                  Fornitore: Cliente
+                </span>
               </h2>
-              <span className="text-xs text-slate-400">Totale: {salesServices.length}</span>
+              <span className="text-xs text-slate-500 font-mono">Righe: {salesServices.length}</span>
             </div>
 
-            <div className="bg-slate-800 rounded-2xl border border-slate-700 shadow-xl overflow-hidden">
+            <div className="bg-white border border-slate-300 shadow-xs overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full text-left border-collapse font-sans text-xs">
                   <thead>
-                    <tr className="bg-slate-950/50 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
-                      <th className="py-2.5 px-4">Cliente</th>
-                      <th className="py-2.5 px-4">Cliente/Fornitore</th>
-                      <th className="py-2.5 px-4">Descrizione Servizio</th>
-                      <th className="py-2.5 px-4">Codice CPA</th>
-                      <th className="py-2.5 px-4 text-center">Erogazione</th>
-                      <th className="py-2.5 px-4 text-center">Incasso</th>
-                      <th className="py-2.5 px-4 text-right">Azioni</th>
+                    <tr className="bg-slate-200 border-b border-slate-300 text-slate-700 font-semibold uppercase tracking-wider">
+                      <th className="py-1.5 px-3 border-r border-slate-300 w-1/6">Cliente</th>
+                      <th className="py-1.5 px-3 border-r border-slate-300 w-1/6">Cliente / Fornitore</th>
+                      <th className="py-1.5 px-3 border-r border-slate-300">Descrizione Servizio</th>
+                      <th className="py-1.5 px-3 border-r border-slate-300 w-28 text-center">Codice CPA</th>
+                      <th className="py-1.5 px-3 border-r border-slate-300 w-24 text-center">Erogazione</th>
+                      <th className="py-1.5 px-3 border-r border-slate-300 w-24 text-center">Incasso</th>
+                      <th className="py-1.5 px-3 text-center w-20">Azione</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-700/50 text-xs sm:text-sm">
-                    {salesServices.map((item) => (
-                      <tr key={item.id} className="hover:bg-slate-700/30 transition-colors">
-                        <td className="py-2 px-4 font-medium text-white">
+                  <tbody className="divide-y divide-slate-200">
+                    {salesServices.map((item, idx) => (
+                      <tr 
+                        key={item.id} 
+                        className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-emerald-50/50 transition-colors`}
+                      >
+                        <td className="py-1.5 px-3 border-r border-slate-200 font-medium text-slate-900 truncate">
                           {item.clients?.name || 'Sconosciuto'}
                         </td>
-                        <td className="py-2 px-4 text-slate-300">
+                        <td className="py-1.5 px-3 border-r border-slate-200 text-slate-700 font-semibold">
                           {item.thirdpartyname || '-'}
                         </td>
-                        <td className="py-2 px-4 text-slate-300 max-w-xs truncate" title={item.servicedescription}>
+                        <td className="py-1.5 px-3 border-r border-slate-200 text-slate-600 truncate max-w-md" title={item.servicedescription}>
                           {item.servicedescription}
                         </td>
-                        <td className="py-2 px-4 font-mono text-indigo-400 font-semibold">
+                        <td className="py-1.5 px-3 border-r border-slate-200 text-center font-mono font-bold text-slate-800">
                           {item.cpacode}
                         </td>
-                        <td className="py-2 px-4 text-center font-bold text-slate-200">
+                        <td className="py-1.5 px-3 border-r border-slate-200 text-center font-semibold text-slate-700">
                           {item.delivery}
                         </td>
-                        <td className="py-2 px-4 text-center font-bold text-slate-200">
+                        <td className="py-1.5 px-3 border-r border-slate-200 text-center font-semibold text-slate-700">
                           {item.collectiontype}
                         </td>
-                        <td className="py-2 px-4 text-right">
+                        <td className="py-1 px-2 text-center">
                           <button 
                             onClick={() => openEditModal(item)}
-                            className="bg-slate-700 hover:bg-amber-600/80 text-amber-300 hover:text-white px-3 py-1.5 rounded-lg font-medium text-xs border border-amber-500/30 transition-all"
+                            className="bg-slate-100 hover:bg-amber-100 text-amber-800 hover:text-amber-900 px-2 py-0.5 rounded border border-amber-300 text-[11px] font-medium transition-colors"
                           >
                             Modifica
                           </button>
@@ -410,8 +422,8 @@ export default function ServicesDashboard() {
                     ))}
                     {salesServices.length === 0 && (
                       <tr>
-                        <td colSpan="7" className="py-6 text-center text-slate-500 font-medium text-xs">
-                          Nessun servizio in vendita trovato per i filtri correnti.
+                        <td colSpan="7" className="py-4 text-center text-slate-400 italic">
+                          Nessun record disponibile per i filtri selezionati.
                         </td>
                       </tr>
                     )}
@@ -422,53 +434,59 @@ export default function ServicesDashboard() {
           </div>
 
           {/* SEZIONE ACQUISTI */}
-          <div className="space-y-3 pt-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-amber-400 flex items-center gap-2">
-                🟠 Acquisti <span className="text-xs bg-amber-500/20 border border-amber-500/30 px-2.5 py-0.5 rounded-full text-amber-300">Il cliente è acquirente</span>
+          <div className="space-y-1.5 pt-2">
+            <div className="flex items-center justify-between px-1">
+              <h2 className="text-xs font-bold text-amber-800 uppercase tracking-wider flex items-center gap-2">
+                <span>🟠 TABELLA ACQUISTI</span>
+                <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-300 normal-case font-normal">
+                  Acquirente: Cliente
+                </span>
               </h2>
-              <span className="text-xs text-slate-400">Totale: {purchaseServices.length}</span>
+              <span className="text-xs text-slate-500 font-mono">Righe: {purchaseServices.length}</span>
             </div>
 
-            <div className="bg-slate-800 rounded-2xl border border-slate-700 shadow-xl overflow-hidden">
+            <div className="bg-white border border-slate-300 shadow-xs overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full text-left border-collapse font-sans text-xs">
                   <thead>
-                    <tr className="bg-slate-950/50 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
-                      <th className="py-2.5 px-4">Cliente</th>
-                      <th className="py-2.5 px-4">Cliente/Fornitore</th>
-                      <th className="py-2.5 px-4">Descrizione Servizio</th>
-                      <th className="py-2.5 px-4">Codice CPA</th>
-                      <th className="py-2.5 px-4 text-center">Erogazione</th>
-                      <th className="py-2.5 px-4 text-center">Incasso</th>
-                      <th className="py-2.5 px-4 text-right">Azioni</th>
+                    <tr className="bg-slate-200 border-b border-slate-300 text-slate-700 font-semibold uppercase tracking-wider">
+                      <th className="py-1.5 px-3 border-r border-slate-300 w-1/6">Cliente</th>
+                      <th className="py-1.5 px-3 border-r border-slate-300 w-1/6">Cliente / Fornitore</th>
+                      <th className="py-1.5 px-3 border-r border-slate-300">Descrizione Servizio</th>
+                      <th className="py-1.5 px-3 border-r border-slate-300 w-28 text-center">Codice CPA</th>
+                      <th className="py-1.5 px-3 border-r border-slate-300 w-24 text-center">Erogazione</th>
+                      <th className="py-1.5 px-3 border-r border-slate-300 w-24 text-center">Incasso</th>
+                      <th className="py-1.5 px-3 text-center w-20">Azione</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-700/50 text-xs sm:text-sm">
-                    {purchaseServices.map((item) => (
-                      <tr key={item.id} className="hover:bg-slate-700/30 transition-colors">
-                        <td className="py-2 px-4 font-medium text-white">
+                  <tbody className="divide-y divide-slate-200">
+                    {purchaseServices.map((item, idx) => (
+                      <tr 
+                        key={item.id} 
+                        className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-amber-50/50 transition-colors`}
+                      >
+                        <td className="py-1.5 px-3 border-r border-slate-200 font-medium text-slate-900 truncate">
                           {item.clients?.name || 'Sconosciuto'}
                         </td>
-                        <td className="py-2 px-4 text-slate-300">
+                        <td className="py-1.5 px-3 border-r border-slate-200 text-slate-700 font-semibold">
                           {item.thirdpartyname || '-'}
                         </td>
-                        <td className="py-2 px-4 text-slate-300 max-w-xs truncate" title={item.servicedescription}>
+                        <td className="py-1.5 px-3 border-r border-slate-200 text-slate-600 truncate max-w-md" title={item.servicedescription}>
                           {item.servicedescription}
                         </td>
-                        <td className="py-2 px-4 font-mono text-indigo-400 font-semibold">
+                        <td className="py-1.5 px-3 border-r border-slate-200 text-center font-mono font-bold text-slate-800">
                           {item.cpacode}
                         </td>
-                        <td className="py-2 px-4 text-center font-bold text-slate-200">
+                        <td className="py-1.5 px-3 border-r border-slate-200 text-center font-semibold text-slate-700">
                           {item.delivery}
                         </td>
-                        <td className="py-2 px-4 text-center font-bold text-slate-200">
+                        <td className="py-1.5 px-3 border-r border-slate-200 text-center font-semibold text-slate-700">
                           {item.collectiontype}
                         </td>
-                        <td className="py-2 px-4 text-right">
+                        <td className="py-1 px-2 text-center">
                           <button 
                             onClick={() => openEditModal(item)}
-                            className="bg-slate-700 hover:bg-amber-600/80 text-amber-300 hover:text-white px-3 py-1.5 rounded-lg font-medium text-xs border border-amber-500/30 transition-all"
+                            className="bg-slate-100 hover:bg-amber-100 text-amber-800 hover:text-amber-900 px-2 py-0.5 rounded border border-amber-300 text-[11px] font-medium transition-colors"
                           >
                             Modifica
                           </button>
@@ -477,8 +495,8 @@ export default function ServicesDashboard() {
                     ))}
                     {purchaseServices.length === 0 && (
                       <tr>
-                        <td colSpan="7" className="py-6 text-center text-slate-500 font-medium text-xs">
-                          Nessun servizio in acquisto trovato per i filtri correnti.
+                        <td colSpan="7" className="py-4 text-center text-slate-400 italic">
+                          Nessun record disponibile per i filtri selezionati.
                         </td>
                       </tr>
                     )}
@@ -490,28 +508,27 @@ export default function ServicesDashboard() {
 
         </div>
 
-        {/* Modal Form Inserimento/Modifica Servizio */}
+        {/* Modal Form Inserimento/Modifica Servizio Stile Dialog Excel */}
         {isModalOpen && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-6">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-3 z-50 overflow-y-auto">
+            <div className="bg-white border border-slate-400 rounded shadow-2xl max-w-lg w-full space-y-4 p-5">
               
-              <div className="flex justify-between items-center border-b border-slate-700 pb-4">
-                <h2 className="text-xl font-bold text-white">
-                  {isEditMode ? 'Modifica Servizio' : 'Nuovo Servizio'}
+              <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                  {isEditMode ? '✏️ Modifica Scheda Servizio' : '➕ Nuova Scheda Servizio'}
                 </h2>
-                <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white">✕</button>
+                <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-700 text-sm">✕</button>
               </div>
 
-              <form onSubmit={handleSaveService} className="space-y-4">
+              <form onSubmit={handleSaveService} className="space-y-3 text-xs">
                 
-                <div className="grid grid-cols-2 gap-4">
-                  
-                  {/* Selezione Cliente con Autocomplete nella Modale */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Selezione Cliente */}
                   <div className="relative" ref={formClientRef}>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Cliente *</label>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">CLIENTE *</label>
                     <input 
                       type="text"
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                      className="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 focus:bg-white focus:border-emerald-600 outline-none"
                       value={formClientSearch}
                       onChange={(e) => {
                         setFormClientSearch(e.target.value)
@@ -519,11 +536,11 @@ export default function ServicesDashboard() {
                         setClientId('')
                       }}
                       onFocus={() => setShowFormClientDropdown(true)}
-                      placeholder="Cerca e seleziona cliente..."
+                      placeholder="Cerca cliente..."
                     />
 
                     {showFormClientDropdown && (
-                      <div className="absolute left-0 right-0 top-full mt-1 bg-slate-950 border border-slate-600 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-[100] divide-y divide-slate-800">
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-300 rounded shadow-lg max-h-40 overflow-y-auto z-[100] divide-y divide-slate-100">
                         {filteredFormClientsList.map(c => (
                           <div 
                             key={c.id}
@@ -532,23 +549,23 @@ export default function ServicesDashboard() {
                               setFormClientSearch(c.name)
                               setShowFormClientDropdown(false)
                             }}
-                            className="p-3 hover:bg-indigo-600/40 cursor-pointer text-xs text-slate-200 transition-colors"
+                            className="p-2 hover:bg-emerald-50 cursor-pointer text-slate-700"
                           >
                             {c.name}
                           </div>
                         ))}
                         {filteredFormClientsList.length === 0 && (
-                          <div className="p-3 text-xs text-slate-400 italic">Nessun cliente trovato.</div>
+                          <div className="p-2 text-slate-400 italic">Nessun cliente trovato.</div>
                         )}
                       </div>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Cliente/Fornitore *</label>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">CLIENTE/FORNITORE *</label>
                     <input 
                       type="text"
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                      className="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 focus:bg-white focus:border-emerald-600 outline-none"
                       value={thirdPartyName}
                       onChange={(e) => setThirdPartyName(e.target.value)}
                       placeholder="Nome controparte..."
@@ -558,9 +575,9 @@ export default function ServicesDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Tipologia Servizio *</label>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">TIPOLOGIA SERVIZIO *</label>
                   <select 
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                    className="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 focus:bg-white focus:border-emerald-600 outline-none font-medium"
                     value={isVendor ? 'true' : 'false'}
                     onChange={(e) => setIsVendor(e.target.value === 'true')}
                   >
@@ -571,12 +588,10 @@ export default function ServicesDashboard() {
 
                 {/* Selezione Codice CPA */}
                 <div className="relative" ref={cpaRef}>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                    Codice CPA * (Cerca nel database)
-                  </label>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">CODICE CPA *</label>
                   <input 
                     type="text" 
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-mono"
+                    className="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 focus:bg-white focus:border-emerald-600 outline-none font-mono"
                     value={cpaSearchQuery}
                     onClick={() => setShowCpaDropdown(true)}
                     onChange={(e) => {
@@ -584,52 +599,48 @@ export default function ServicesDashboard() {
                       setCpaCode(e.target.value)
                       setShowCpaDropdown(true)
                     }}
-                    placeholder="Digita codice o parola chiave..."
+                    placeholder="Digita codice CPA..."
                     required
                   />
 
                   {showCpaDropdown && (
-                    <div className="absolute left-0 right-0 top-full mt-1 bg-slate-950 border border-slate-600 rounded-xl shadow-2xl max-h-52 overflow-y-auto z-[100] divide-y divide-slate-800">
+                    <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-300 rounded shadow-lg max-h-48 overflow-y-auto z-[100] divide-y divide-slate-100">
                       {filteredCpaList.map((item) => (
                         <div 
                           key={item.code} 
                           onClick={() => handleSelectCpaItem(item)}
-                          className="p-3 hover:bg-indigo-600/40 cursor-pointer text-xs transition-colors flex justify-between items-center"
+                          className="p-2 hover:bg-emerald-50 cursor-pointer flex justify-between items-center"
                         >
                           <div>
-                            <span className="font-bold text-indigo-400 font-mono mr-2">{item.code}</span>
-                            <span className="text-slate-200">{item.description}</span>
+                            <span className="font-bold text-emerald-700 font-mono mr-2">{item.code}</span>
+                            <span className="text-slate-600">{item.description}</span>
                           </div>
                         </div>
                       ))}
                       {filteredCpaList.length === 0 && (
-                        <div className="p-3 text-xs text-slate-400 italic">
-                          Nessun codice trovato.
-                        </div>
+                        <div className="p-2 text-slate-400 italic">Nessun codice trovato.</div>
                       )}
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                    Descrizione Servizio *
-                  </label>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">DESCRIZIONE SERVIZIO *</label>
                   <textarea 
-                    rows="3"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                    rows="2"
+                    className="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 focus:bg-white focus:border-emerald-600 outline-none"
                     value={serviceDescription}
                     onChange={(e) => setServiceDescription(e.target.value)}
-                    placeholder="Inserisci una descrizione dettagliata del servizio offerto o ricevuto..."
+                    placeholder="Descrizione dettagliata..."
                     required
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Erogazione (I / R) *</label>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">EROGAZIONE (I / R) *</label>
                     <select 
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                      className="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 focus:bg-white focus:border-emerald-600 outline-none font-medium"
                       value={delivery}
                       onChange={(e) => setDelivery(e.target.value)}
                       required
@@ -640,9 +651,9 @@ export default function ServicesDashboard() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Incasso (A / B / X) *</label>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">INCASSO (A / B / X) *</label>
                     <select 
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                      className="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 focus:bg-white focus:border-emerald-600 outline-none font-medium"
                       value={collectionType}
                       onChange={(e) => setCollectionType(e.target.value)}
                       required
@@ -654,19 +665,19 @@ export default function ServicesDashboard() {
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
                   <button 
                     type="button" 
                     onClick={() => setIsModalOpen(false)}
-                    className="px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-700 font-medium transition-colors text-sm"
+                    className="px-3 py-1.5 rounded border border-slate-300 text-slate-600 hover:bg-slate-100 font-medium transition-colors"
                   >
                     Annulla
                   </button>
                   <button 
                     type="submit" 
-                    className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-600/30 transition-all text-sm"
+                    className="px-4 py-1.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-semibold shadow-xs transition-colors"
                   >
-                    Salva Servizio
+                    Salva
                   </button>
                 </div>
 
