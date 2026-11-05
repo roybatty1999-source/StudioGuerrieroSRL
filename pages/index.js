@@ -117,7 +117,7 @@ export default function ServicesDashboard() {
     setCpaSearchQuery('')
     setShowCpaDropdown(false)
     setDelivery('I')
-    setCollectionType('R')
+    setCollectionType('A')
     setIsModalOpen(true)
   }
 
