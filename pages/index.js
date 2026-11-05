@@ -693,14 +693,14 @@ export default function InvoiceDashboard() {
       return
     }
 
-    const invoicePayload = {
+const invoicePayload = {
       invoicenumber: invoiceNumber ? Number(invoiceNumber) : null,
       clientid: selectedClientId,
       issuedate: invoiceDate,
       paymentdate: paymentDate || null,
-      taxableamount: taxableAmount ? Number(taxableAmount) : null,
-      vatamount: vatAmount ? Number(vatAmount) : null,
-      totalamount: totalAmount ? Number(totalAmount) : null,
+      taxableamount: taxableAmount !== '' ? Number(taxableAmount) : null,
+      vatamount: vatAmount !== '' ? Number(vatAmount) : null,
+      totalamount: totalAmount !== '' ? Number(totalAmount) : null,
       note: invoiceNotes || null
     }
 
