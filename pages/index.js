@@ -685,7 +685,7 @@ export default function InvoiceDashboard() {
     setIsModalOpen(true)
   }
 
-  async function handleSaveInvoice(event) {
+ async function handleSaveInvoice(event) {
     event.preventDefault()
 
     if (!selectedClientId) {
