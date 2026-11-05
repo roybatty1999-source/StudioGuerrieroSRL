@@ -685,6 +685,54 @@ export default function InvoiceDashboard() {
     setIsModalOpen(true)
   }
 
+  async function handleSaveInvoice(event) {
+    event.preventDefault()
+
+    if (!selectedClientId) {
+      alert("Seleziona un cliente valido dall'elenco dei suggerimenti.")
+      return
+    }
+
+    const invoicePayload = {
+      invoicenumber: invoiceNumber ? Number(invoiceNumber) : null,
+      clientid: selectedClientId,
+      issuedate: invoiceDate,
+      paymentdate: paymentDate || null,
+      taxableamount: taxableAmount !== '' ? Number(taxableAmount) : null,
+      vatamount: vatAmount !== '' ? Number(vatAmount) : null,
+      totalamount: totalAmount !== '' ? Number(totalAmount) : null,
+      note: invoiceNotes || null
+    }
+
+    if (isEditMode) {
+      const { error } = await supabaseClient
+        .from('invoices')
+        .update(invoicePayload)
+        .eq('id', currentInvoiceId)
+
+      if (error) {
+        alert('Errore durante la modifica: ' + error.message)
+        return
+      }
+    } else {
+      const { error } = await supabaseClient
+        .from('invoices')
+        .insert([invoicePayload])
+
+      if (error) {
+        alert("Errore durante l'inserimento: " + error.message)
+        return
+      }
+    }
+
+    setIsModalOpen(false)
+    loadYears()
+    loadInvoices()
+    loadAllInvoicesForManagement()
+    if (isProspectOpen && prospectClientId) {
+      loadProspectData(prospectClientId)
+    }
+  }
 
   return (
     <>
