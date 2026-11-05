@@ -245,29 +245,29 @@ export default function InvoiceDashboard() {
         datasets: [{
           label: 'Imponibile (€)',
           data: taxableData,
-          borderColor: '#818cf8',
-          backgroundColor: 'rgba(129, 140, 248, 0.1)',
-          borderWidth: 3,
+          borderColor: '#047857',
+          backgroundColor: 'rgba(4, 120, 87, 0.1)',
+          borderWidth: 2.5,
           fill: true,
           tension: 0.3,
-          pointBackgroundColor: '#818cf8',
-          pointRadius: 5
+          pointBackgroundColor: '#047857',
+          pointRadius: 4
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { labels: { color: '#cbd5e1' } }
+          legend: { labels: { color: '#334155' } }
         },
         scales: {
           x: { 
-            grid: { color: 'rgba(51, 65, 85, 0.4)' },
-            ticks: { color: '#cbd5e1' }
+            grid: { color: 'rgba(203, 213, 225, 0.6)' },
+            ticks: { color: '#334155' }
           },
           y: { 
-            grid: { color: 'rgba(51, 65, 85, 0.4)' },
-            ticks: { color: '#cbd5e1' }
+            grid: { color: 'rgba(203, 213, 225, 0.6)' },
+            ticks: { color: '#334155' }
           }
         }
       }
@@ -864,33 +864,38 @@ export default function InvoiceDashboard() {
         `}} />
       </Head>
       
-      <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-4 sm:p-8 flex flex-col">
-        <div className="max-w-7xl mx-auto w-full space-y-6 no-print flex flex-col flex-1">
+      {/* Sfondo stile foglio di calcolo / Excel */}
+      <div className="min-h-screen bg-slate-100 text-slate-800 font-sans p-3 sm:p-5 flex flex-col">
+        <div className="max-w-[98%] mx-auto w-full space-y-4 no-print flex flex-col flex-1">
           
-          {/* Header con menu a tendina e pulsanti (Fisso) */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl relative z-20 shrink-0">
-            <div>
-              <h1 className="text-3xl font-extrabold text-white tracking-tight">Gestionale Fatture</h1>
-              <p className="text-slate-400 text-sm mt-1">Gestisci, filtra ed emetti le tue fatture in modo semplice</p>
+          {/* Header Principale in stile Toolbar Excel */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-3 rounded border border-slate-300 shadow-sm relative z-20 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-700 text-white font-bold px-2.5 py-1 rounded text-sm tracking-wider font-mono">EXCEL</div>
+              <div>
+                <h1 className="text-xl font-bold text-slate-900 leading-tight">Gestionale Fatture</h1>
+                <p className="text-slate-500 text-xs">Gestisci, filtra ed emetti le tue fatture in modo semplice</p>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
+            
+            <div className="flex flex-wrap items-center gap-2">
               
               {/* Menu a tendina CLIENTE */}
               <div className="relative">
                 <button 
                   onClick={() => { setClientMenuOpen(!clientMenuOpen); setInvoiceMenuOpen(false); }}
-                  className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg transition-all duration-200 border border-slate-600 text-sm"
+                  className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded border border-slate-300 text-xs font-medium shadow-xs transition-all"
                 >
-                  <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3.5 h-3.5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                   </svg>
                   Cliente ▾
                 </button>
                 {clientMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl py-2 z-30">
-                    <button onClick={openAddClientModal} className="w-full text-left px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 hover:text-white">Aggiungi</button>
-                    <button onClick={openSelectClientForEdit} className="w-full text-left px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 hover:text-white">Modifica</button>
-                    <button onClick={openSelectClientForDelete} className="w-full text-left px-4 py-2 text-sm text-rose-400 hover:bg-slate-800 hover:text-rose-300">Cancella</button>
+                  <div className="absolute right-0 mt-1 w-44 bg-white border border-slate-300 rounded shadow-lg py-1.5 z-30 text-xs">
+                    <button onClick={openAddClientModal} className="w-full text-left px-3 py-1.5 text-slate-700 hover:bg-emerald-50 hover:text-emerald-900">Aggiungi</button>
+                    <button onClick={openSelectClientForEdit} className="w-full text-left px-3 py-1.5 text-slate-700 hover:bg-emerald-50 hover:text-emerald-900">Modifica</button>
+                    <button onClick={openSelectClientForDelete} className="w-full text-left px-3 py-1.5 text-rose-600 hover:bg-rose-50 hover:text-rose-900">Cancella</button>
                   </div>
                 )}
               </div>
@@ -899,18 +904,18 @@ export default function InvoiceDashboard() {
               <div className="relative">
                 <button 
                   onClick={() => { setInvoiceMenuOpen(!invoiceMenuOpen); setClientMenuOpen(false); }}
-                  className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg transition-all duration-200 border border-slate-600 text-sm"
+                  className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded border border-slate-300 text-xs font-medium shadow-xs transition-all"
                 >
-                  <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3.5 h-3.5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   Fatture ▾
                 </button>
                 {invoiceMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl py-2 z-30">
-                    <button onClick={handleAddInvoiceAction} className="w-full text-left px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 hover:text-white">Aggiungi</button>
-                    <button onClick={openSelectInvoiceForEdit} className="w-full text-left px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 hover:text-white">Modifica</button>
-                    <button onClick={openSelectInvoiceForDelete} className="w-full text-left px-4 py-2 text-sm text-rose-400 hover:bg-slate-800 hover:text-rose-300">Cancella</button>
+                  <div className="absolute right-0 mt-1 w-44 bg-white border border-slate-300 rounded shadow-lg py-1.5 z-30 text-xs">
+                    <button onClick={handleAddInvoiceAction} className="w-full text-left px-3 py-1.5 text-slate-700 hover:bg-emerald-50 hover:text-emerald-900">Aggiungi</button>
+                    <button onClick={openSelectInvoiceForEdit} className="w-full text-left px-3 py-1.5 text-slate-700 hover:bg-emerald-50 hover:text-emerald-900">Modifica</button>
+                    <button onClick={openSelectInvoiceForDelete} className="w-full text-left px-3 py-1.5 text-rose-600 hover:bg-rose-50 hover:text-rose-900">Cancella</button>
                   </div>
                 )}
               </div>
@@ -918,9 +923,9 @@ export default function InvoiceDashboard() {
               {/* Pulsante Gestione */}
               <button 
                 onClick={() => setIsManagementOpen(true)}
-                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg shadow-indigo-600/30 transition-all duration-200 text-sm"
+                className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded border border-slate-300 text-xs font-medium shadow-xs transition-all"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
                 Gestione
@@ -929,9 +934,9 @@ export default function InvoiceDashboard() {
               {/* Pulsante Prospetto Cliente */}
               <button 
                 onClick={() => setIsProspectOpen(true)}
-                className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg transition-all duration-200 border border-slate-600 text-sm"
+                className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded border border-slate-300 text-xs font-medium shadow-xs transition-all"
               >
-                <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 4v12l-4-2-4 2V4M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 Prospetto Cliente
@@ -939,16 +944,16 @@ export default function InvoiceDashboard() {
             </div>
           </div>
 
-          {/* Bar Filtri (Fisso) con Autocomplete Cliente */}
-          <div className="bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-lg flex flex-col md:flex-row gap-4 items-end shrink-0">
+          {/* Bar Filtri in stile Excel */}
+          <div className="bg-white p-3 rounded border border-slate-300 shadow-sm flex flex-col md:flex-row gap-3 items-end shrink-0 text-xs">
             
             {/* Campo di Ricerca Autocomplete per Filtro Principale */}
             <div className="flex-1 w-full relative">
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Cliente (Digita per cercare)</label>
+              <label className="block font-bold text-slate-600 mb-1">CLIENTE (DIGITA PER CERCARE)</label>
               <div className="relative">
                 <input 
                   type="text"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm"
+                  className="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 focus:bg-white focus:border-emerald-600 outline-none text-xs"
                   placeholder="Es. GRU o nome cliente..."
                   value={clientSearchQuery}
                   onChange={(e) => {
@@ -966,7 +971,7 @@ export default function InvoiceDashboard() {
                       setFilterClient('')
                       setClientSearchQuery('')
                     }}
-                    className="absolute right-3 top-3.5 text-slate-400 hover:text-white text-xs font-bold"
+                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-700 text-xs font-bold"
                     title="Cancella filtro cliente"
                   >
                     ✕
@@ -976,14 +981,14 @@ export default function InvoiceDashboard() {
 
               {/* Dropdown dei suggerimenti per il filtro principale */}
               {clientDropdownOpen && (
-                <div className="absolute left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-30">
+                <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-300 rounded shadow-lg max-h-48 overflow-y-auto z-30 divide-y divide-slate-100">
                   <div 
                     onClick={() => {
                       setFilterClient('')
                       setClientSearchQuery('')
                       setClientDropdownOpen(false)
                     }}
-                    className="px-4 py-2.5 text-sm text-slate-400 hover:bg-slate-800 hover:text-white cursor-pointer border-b border-slate-800"
+                    className="px-3 py-2 text-xs text-slate-500 hover:bg-emerald-50 hover:text-slate-800 cursor-pointer"
                   >
                     -- Tutti i clienti --
                   </div>
@@ -997,22 +1002,22 @@ export default function InvoiceDashboard() {
                           setClientSearchQuery(clientItem.name)
                           setClientDropdownOpen(false)
                         }}
-                        className="px-4 py-2.5 text-sm text-slate-200 hover:bg-slate-800 hover:text-white cursor-pointer"
+                        className="px-3 py-2 text-xs text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 cursor-pointer"
                       >
                         {clientItem.name}
                       </div>
                     ))}
                   {clientsList.filter(c => c.name.toLowerCase().includes(clientSearchQuery.toLowerCase())).length === 0 && (
-                    <div className="px-4 py-2.5 text-sm text-slate-500 italic">Nessun cliente trovato</div>
+                    <div className="px-3 py-2 text-xs text-slate-400 italic">Nessun cliente trovato</div>
                   )}
                 </div>
               )}
             </div>
 
-            <div className="w-full md:w-48">
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Anno di emissione</label>
+            <div className="w-full md:w-44">
+              <label className="block font-bold text-slate-600 mb-1">ANNO DI EMISSIONE</label>
               <select 
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm"
+                className="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 focus:bg-white focus:border-emerald-600 outline-none text-xs font-medium"
                 value={filterYear}
                 onChange={(e) => setFilterYear(e.target.value)}
               >
@@ -1026,10 +1031,10 @@ export default function InvoiceDashboard() {
             </div>
 
             {/* Filtro Stato Pagamento */}
-            <div className="w-full md:w-48">
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Stato Pagamento</label>
+            <div className="w-full md:w-44">
+              <label className="block font-bold text-slate-600 mb-1">STATO PAGAMENTO</label>
               <select 
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm"
+                className="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 focus:bg-white focus:border-emerald-600 outline-none text-xs font-medium"
                 value={paymentFilter}
                 onChange={(e) => setPaymentFilter(e.target.value)}
               >
@@ -1043,69 +1048,72 @@ export default function InvoiceDashboard() {
             <div>
               <button
                 onClick={() => setControlModalOpen(true)}
-                className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-3 rounded-xl font-semibold shadow-lg shadow-indigo-600/30 transition-all text-sm flex items-center justify-center gap-2"
+                className="w-full md:w-auto bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 rounded font-semibold text-xs shadow-xs transition-colors flex items-center justify-center gap-1.5"
               >
                 📊 Controllo
               </button>
             </div>
           </div>
 
-          {/* Tabella Fatture con Scorrimento Verticale e Intestazione Sticky */}
-          <div className="bg-slate-800 rounded-2xl border border-slate-700 shadow-xl overflow-hidden flex flex-col flex-1 max-h-[55vh]">
+          {/* Tabella Fatture stile Excel con Righe Alternate */}
+          <div className="bg-white border border-slate-300 shadow-xs overflow-hidden flex flex-col flex-1 max-h-[58vh]">
             <div className="overflow-x-auto overflow-y-auto flex-1">
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-slate-900 text-slate-300 text-xs uppercase tracking-wider sticky top-0 z-10 shadow-md">
+              <table className="w-full text-left border-collapse font-sans text-xs">
+                <thead className="bg-slate-200 border-b border-slate-300 text-slate-700 font-semibold uppercase tracking-wider sticky top-0 z-10">
                   <tr>
-                    <th className="py-4 px-6">N° Fattura</th>
-                    <th className="py-4 px-6">Data Emissione</th>
-                    <th className="py-4 px-6">Data Pagamento</th>
-                    <th className="py-4 px-6">Cliente</th>
-                    <th className="py-4 px-6">Imponibile</th>
-                    <th className="py-4 px-6">IVA</th>
-                    <th className="py-4 px-6">Incasso</th>
-                    <th className="py-4 px-6">Note</th>
-                    <th className="py-4 px-6 text-right">Azioni</th>
+                    <th className="py-2 px-3 border-r border-slate-300">N° Fattura</th>
+                    <th className="py-2 px-3 border-r border-slate-300">Data Emissione</th>
+                    <th className="py-2 px-3 border-r border-slate-300">Data Pagamento</th>
+                    <th className="py-2 px-3 border-r border-slate-300">Cliente</th>
+                    <th className="py-2 px-3 border-r border-slate-300 text-right">Imponibile</th>
+                    <th className="py-2 px-3 border-r border-slate-300 text-right">IVA</th>
+                    <th className="py-2 px-3 border-r border-slate-300 text-right">Incasso</th>
+                    <th className="py-2 px-3 border-r border-slate-300">Note</th>
+                    <th className="py-2 px-3 text-center w-20">Azioni</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-700/50 text-sm">
-                  {displayedInvoices.map((invoiceItem) => {
+                <tbody className="divide-y divide-slate-200">
+                  {displayedInvoices.map((invoiceItem, idx) => {
                     const yearFromDate = invoiceItem.issuedate ? invoiceItem.issuedate.substring(0, 4) : ''
                     const displayInvoiceNum = invoiceItem.invoicenumber && yearFromDate ? `${invoiceItem.invoicenumber}/${yearFromDate}` : invoiceItem.invoicenumber
 
                     return (
-                      <tr key={invoiceItem.id} className="hover:bg-slate-700/30 transition-colors">
-                        <td className="py-4 px-6 font-bold text-indigo-400">
+                      <tr 
+                        key={invoiceItem.id} 
+                        className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-emerald-50/50 transition-colors`}
+                      >
+                        <td className="py-1.5 px-3 border-r border-slate-200 font-bold text-emerald-800 font-mono">
                           {displayInvoiceNum}
                         </td>
-                        <td className="py-4 px-6 text-slate-300">
+                        <td className="py-1.5 px-3 border-r border-slate-200 text-slate-700">
                           {formatDateToIT(invoiceItem.issuedate)}
                         </td>
-                        <td className="py-4 px-6 text-slate-300">
+                        <td className="py-1.5 px-3 border-r border-slate-200 text-slate-700">
                           {invoiceItem.paymentdate ? (
-                            <span className="text-emerald-400 font-medium">{formatDateToIT(invoiceItem.paymentdate)}</span>
+                            <span className="text-emerald-700 font-semibold">{formatDateToIT(invoiceItem.paymentdate)}</span>
                           ) : (
-                            <span className="text-slate-500 italic">Non pagata</span>
+                            <span className="text-slate-400 italic">Non pagata</span>
                           )}
                         </td>
-                        <td className="py-4 px-6 font-medium text-white">
+                        <td className="py-1.5 px-3 border-r border-slate-200 font-semibold text-slate-900">
                           {invoiceItem.clients?.name || 'Cliente non specificato'}
                         </td>
-                        <td className="py-4 px-6 text-slate-300">
+                        <td className="py-1.5 px-3 border-r border-slate-200 text-right font-mono text-slate-700">
                           {invoiceItem.taxableamount != null ? `€ ${Number(invoiceItem.taxableamount).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
                         </td>
-                        <td className="py-4 px-6 text-slate-300">
+                        <td className="py-1.5 px-3 border-r border-slate-200 text-right font-mono text-slate-700">
                           {invoiceItem.vatamount != null ? `€ ${Number(invoiceItem.vatamount).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
                         </td>
-                        <td className="py-4 px-6 font-semibold text-emerald-400">
+                        <td className="py-1.5 px-3 border-r border-slate-200 text-right font-mono font-bold text-emerald-800">
                           {invoiceItem.totalamount != null ? `€ ${Number(invoiceItem.totalamount).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
                         </td>
-                        <td className="py-4 px-6 text-slate-400 max-w-xs truncate">
+                        <td className="py-1.5 px-3 border-r border-slate-200 text-slate-500 max-w-xs truncate">
                           {invoiceItem.note || '-'}
                         </td>
-                        <td className="py-4 px-6 text-right">
+                        <td className="py-1 px-2 text-center">
                           <button 
                             onClick={() => openEditModal(invoiceItem)}
-                            className="bg-slate-700 hover:bg-amber-600/80 text-amber-300 hover:text-white px-3.5 py-1.5 rounded-lg font-medium text-xs border border-amber-500/30 transition-all duration-150"
+                            className="bg-slate-100 hover:bg-amber-100 text-amber-800 hover:text-amber-900 px-2 py-0.5 rounded border border-amber-300 text-[11px] font-medium transition-colors"
                           >
                             Modifica
                           </button>
@@ -1115,7 +1123,7 @@ export default function InvoiceDashboard() {
                   })}
                   {displayedInvoices.length === 0 && (
                     <tr>
-                      <td colSpan="9" className="py-12 text-center text-slate-500 font-medium">
+                      <td colSpan="9" className="py-8 text-center text-slate-400 italic text-xs">
                         Nessuna fattura trovata con i filtri selezionati.
                       </td>
                     </tr>
@@ -1127,31 +1135,31 @@ export default function InvoiceDashboard() {
 
         </div>
 
-        {/* Finestra Modale "Controllo" per Anno e Mese */}
+        {/* Finestra Modale "Controllo" stile Excel */}
         {controlModalOpen && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 sm:p-6 max-w-5xl w-full shadow-2xl space-y-4 flex flex-col max-h-[92vh]">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-3 z-50 overflow-y-auto">
+            <div className="bg-white border border-slate-400 rounded shadow-2xl p-5 max-w-5xl w-full space-y-3 flex flex-col max-h-[92vh] text-xs">
               
-              <div className="flex justify-between items-center border-b border-slate-700 pb-3">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                <h2 className="font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
                   📊 Controllo Fatture per Anno e Mese
                 </h2>
                 <button 
                   onClick={() => setControlModalOpen(false)} 
-                  className="text-slate-400 hover:text-white text-base font-bold"
+                  className="text-slate-400 hover:text-slate-700 text-sm font-bold"
                 >
                   ✕
                 </button>
               </div>
 
               {/* Selettori Anno, Mese e Stato per il Controllo */}
-              <div className="flex flex-wrap gap-3 items-center bg-slate-900 p-3 rounded-xl border border-slate-700 shrink-0">
+              <div className="flex flex-wrap gap-3 items-center bg-slate-50 p-2.5 rounded border border-slate-300 shrink-0">
                 <div>
-                  <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Anno</label>
+                  <label className="block font-bold text-slate-600 mb-1 text-[11px]">ANNO</label>
                   <select
                     value={controlYear}
                     onChange={(e) => setControlYear(e.target.value)}
-                    className="bg-slate-800 text-white px-3 py-1.5 rounded-lg border border-slate-600 text-xs outline-none"
+                    className="bg-white text-slate-800 px-2.5 py-1 rounded border border-slate-300 text-xs outline-none"
                   >
                     <option value="ALL">Tutti gli anni</option>
                     <option value="2026">2026</option>
@@ -1161,11 +1169,11 @@ export default function InvoiceDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Mese</label>
+                  <label className="block font-bold text-slate-600 mb-1 text-[11px]">MESE</label>
                   <select
                     value={controlMonth}
                     onChange={(e) => setControlMonth(e.target.value)}
-                    className="bg-slate-800 text-white px-3 py-1.5 rounded-lg border border-slate-600 text-xs outline-none"
+                    className="bg-white text-slate-800 px-2.5 py-1 rounded border border-slate-300 text-xs outline-none"
                   >
                     <option value="ALL">Tutti i mesi</option>
                     <option value="01">Gennaio</option>
@@ -1183,13 +1191,12 @@ export default function InvoiceDashboard() {
                   </select>
                 </div>
 
-                {/* Filtro Stato che agisce unicamente sulla tabella */}
                 <div>
-                  <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Visualizzazione</label>
+                  <label className="block font-bold text-slate-600 mb-1 text-[11px]">VISUALIZZAZIONE</label>
                   <select
                     value={controlStatusFilter}
                     onChange={(e) => setControlStatusFilter(e.target.value)}
-                    className="bg-slate-800 text-white px-3 py-1.5 rounded-lg border border-slate-600 text-xs outline-none"
+                    className="bg-white text-slate-800 px-2.5 py-1 rounded border border-slate-300 text-xs outline-none"
                   >
                     <option value="ALL">💳 Tutte le fatture</option>
                     <option value="PAID">🟢 Solo Pagate</option>
@@ -1199,37 +1206,37 @@ export default function InvoiceDashboard() {
               </div>
 
               {/* Tabella Fatture filtrate nella modale */}
-              <div className="overflow-y-auto flex-1 border border-slate-700 rounded-xl relative min-h-[220px]">
+              <div className="overflow-y-auto flex-1 border border-slate-300 rounded relative min-h-[200px]">
                 <table className="w-full text-left border-collapse">
-                  <thead className="sticky top-0 bg-slate-900 text-slate-300 text-[11px] uppercase z-10 shadow-md">
+                  <thead className="sticky top-0 bg-slate-200 text-slate-700 font-semibold uppercase text-[11px] z-10">
                     <tr>
-                      <th className="py-2.5 px-3">Data</th>
-                      <th className="py-2.5 px-3">N° Fattura</th>
-                      <th className="py-2.5 px-3">Cliente</th>
-                      <th className="py-2.5 px-3 text-right">Imponibile</th>
-                      <th className="py-2.5 px-3 text-right">IVA</th>
-                      <th className="py-2.5 px-3 text-right">Incasso</th>
+                      <th className="py-2 px-3 border-r border-slate-300">Data</th>
+                      <th className="py-2 px-3 border-r border-slate-300">N° Fattura</th>
+                      <th className="py-2 px-3 border-r border-slate-300">Cliente</th>
+                      <th className="py-2 px-3 border-r border-slate-300 text-right">Imponibile</th>
+                      <th className="py-2 px-3 border-r border-slate-300 text-right">IVA</th>
+                      <th className="py-2 px-3 text-right">Incasso</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-700/50 text-xs">
-                    {controlTableFilteredInvoices.map((item) => {
+                  <tbody className="divide-y divide-slate-200">
+                    {controlTableFilteredInvoices.map((item, idx) => {
                       const yearFromDate = item.issuedate ? item.issuedate.substring(0, 4) : ''
                       const displayNum = item.invoicenumber && yearFromDate ? `${item.invoicenumber}/${yearFromDate}` : item.invoicenumber
                       
                       return (
-                        <tr key={item.id} className="hover:bg-slate-700/30">
-                          <td className="py-2 px-3 text-slate-300">{formatDateToIT(item.issuedate)}</td>
-                          <td className="py-2 px-3 font-bold text-indigo-400">{displayNum}</td>
-                          <td className="py-2 px-3 font-medium text-white">{item.clients?.name || 'Cliente non specificato'}</td>
-                          <td className="py-2 px-3 text-right font-mono text-slate-200">€ {(Number(item.taxableamount) || 0).toFixed(2)}</td>
-                          <td className="py-2 px-3 text-right font-mono text-slate-200">€ {(Number(item.vatamount) || 0).toFixed(2)}</td>
-                          <td className="py-2 px-3 text-right font-mono text-emerald-400 font-bold">€ {(Number(item.totalamount) || 0).toFixed(2)}</td>
+                        <tr key={item.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-emerald-50/50`}>
+                          <td className="py-1.5 px-3 border-r border-slate-200 text-slate-700">{formatDateToIT(item.issuedate)}</td>
+                          <td className="py-1.5 px-3 border-r border-slate-200 font-bold text-emerald-800 font-mono">{displayNum}</td>
+                          <td className="py-1.5 px-3 border-r border-slate-200 font-medium text-slate-900">{item.clients?.name || 'Cliente non specificato'}</td>
+                          <td className="py-1.5 px-3 border-r border-slate-200 text-right font-mono text-slate-700">€ {(Number(item.taxableamount) || 0).toFixed(2)}</td>
+                          <td className="py-1.5 px-3 border-r border-slate-200 text-right font-mono text-slate-700">€ {(Number(item.vatamount) || 0).toFixed(2)}</td>
+                          <td className="py-1.5 px-3 text-right font-mono text-emerald-800 font-bold">€ {(Number(item.totalamount) || 0).toFixed(2)}</td>
                         </tr>
                       )
                     })}
                     {controlTableFilteredInvoices.length === 0 && (
                       <tr>
-                        <td colSpan="6" className="py-6 text-center text-slate-500 italic text-xs">
+                        <td colSpan="6" className="py-6 text-center text-slate-400 italic">
                           Nessuna fattura trovata per il periodo selezionato.
                         </td>
                       </tr>
@@ -1238,76 +1245,76 @@ export default function InvoiceDashboard() {
                 </table>
               </div>
 
-              {/* Sezione Totali in basso */}
-              <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-700 space-y-1.5 shrink-0">
+              {/* Sezione Totali in basso stile Excel */}
+              <div className="bg-slate-50 p-2.5 rounded border border-slate-300 space-y-1.5 shrink-0">
                 
                 {/* 1. Totale Complessivo */}
                 <div className="grid grid-cols-4 gap-2 text-center">
-                  <div className="bg-slate-800 p-1.5 rounded border border-slate-700">
-                    <span className="block text-[9px] font-semibold text-slate-400 uppercase">N. Fatture</span>
-                    <span className="text-xs font-bold font-mono text-white">{controlBaseFilteredInvoices.length}</span>
+                  <div className="bg-white p-1.5 rounded border border-slate-300">
+                    <span className="block text-[9px] font-bold text-slate-500 uppercase">N. Fatture</span>
+                    <span className="text-xs font-bold font-mono text-slate-800">{controlBaseFilteredInvoices.length}</span>
                   </div>
-                  <div className="bg-slate-800 p-1.5 rounded border border-slate-700">
-                    <span className="block text-[9px] font-semibold text-slate-400 uppercase">Tot. Imponibile</span>
-                    <span className="text-xs font-bold font-mono text-indigo-400">€ {controlTotalTaxable.toFixed(2)}</span>
+                  <div className="bg-white p-1.5 rounded border border-slate-300">
+                    <span className="block text-[9px] font-bold text-slate-500 uppercase">Tot. Imponibile</span>
+                    <span className="text-xs font-bold font-mono text-slate-800">€ {controlTotalTaxable.toFixed(2)}</span>
                   </div>
-                  <div className="bg-slate-800 p-1.5 rounded border border-slate-700">
-                    <span className="block text-[9px] font-semibold text-slate-400 uppercase">Tot. IVA</span>
-                    <span className="text-xs font-bold font-mono text-amber-400">€ {controlTotalVat.toFixed(2)}</span>
+                  <div className="bg-white p-1.5 rounded border border-slate-300">
+                    <span className="block text-[9px] font-bold text-slate-500 uppercase">Tot. IVA</span>
+                    <span className="text-xs font-bold font-mono text-slate-800">€ {controlTotalVat.toFixed(2)}</span>
                   </div>
-                  <div className="bg-slate-800 p-1.5 rounded border border-slate-700">
-                    <span className="block text-[9px] font-semibold text-slate-400 uppercase">Tot. Incasso</span>
-                    <span className="text-xs font-bold font-mono text-emerald-400">€ {controlTotalCollection.toFixed(2)}</span>
+                  <div className="bg-white p-1.5 rounded border border-slate-300">
+                    <span className="block text-[9px] font-bold text-slate-500 uppercase">Tot. Incasso</span>
+                    <span className="text-xs font-bold font-mono text-emerald-700 font-bold">€ {controlTotalCollection.toFixed(2)}</span>
                   </div>
                 </div>
 
                 {/* 2. Totale Fatture Pagate */}
-                <div className="grid grid-cols-4 gap-2 text-center border-t border-slate-800/80 pt-1.5">
-                  <div className="bg-slate-800/60 p-1 rounded border border-emerald-500/20">
-                    <span className="block text-[9px] font-semibold text-emerald-400 uppercase">🟢 Pagate (N.)</span>
-                    <span className="text-xs font-bold font-mono text-white">{controlPaidInvoices.length}</span>
+                <div className="grid grid-cols-4 gap-2 text-center border-t border-slate-200 pt-1.5">
+                  <div className="bg-emerald-50/50 p-1 rounded border border-emerald-200">
+                    <span className="block text-[9px] font-bold text-emerald-800 uppercase">🟢 Pagate (N.)</span>
+                    <span className="text-xs font-bold font-mono text-slate-800">{controlPaidInvoices.length}</span>
                   </div>
-                  <div className="bg-slate-800/60 p-1 rounded border border-emerald-500/20">
-                    <span className="block text-[9px] font-semibold text-emerald-400 uppercase">Imponibile Pagato</span>
-                    <span className="text-xs font-bold font-mono text-indigo-300">€ {controlPaidTaxable.toFixed(2)}</span>
+                  <div className="bg-emerald-50/50 p-1 rounded border border-emerald-200">
+                    <span className="block text-[9px] font-bold text-emerald-800 uppercase">Imponibile Pagato</span>
+                    <span className="text-xs font-bold font-mono text-slate-800">€ {controlPaidTaxable.toFixed(2)}</span>
                   </div>
-                  <div className="bg-slate-800/60 p-1 rounded border border-emerald-500/20">
-                    <span className="block text-[9px] font-semibold text-emerald-400 uppercase">IVA Pagata</span>
-                    <span className="text-xs font-bold font-mono text-amber-300">€ {controlPaidVat.toFixed(2)}</span>
+                  <div className="bg-emerald-50/50 p-1 rounded border border-emerald-200">
+                    <span className="block text-[9px] font-bold text-emerald-800 uppercase">IVA Pagata</span>
+                    <span className="text-xs font-bold font-mono text-slate-800">€ {controlPaidVat.toFixed(2)}</span>
                   </div>
-                  <div className="bg-slate-800/60 p-1 rounded border border-emerald-500/20">
-                    <span className="block text-[9px] font-semibold text-emerald-400 uppercase">Incasso Pagato</span>
-                    <span className="text-xs font-bold font-mono text-emerald-400">€ {controlPaidCollection.toFixed(2)}</span>
+                  <div className="bg-emerald-50/50 p-1 rounded border border-emerald-200">
+                    <span className="block text-[9px] font-bold text-emerald-800 uppercase">Incasso Pagato</span>
+                    <span className="text-xs font-bold font-mono text-emerald-800 font-bold">€ {controlPaidCollection.toFixed(2)}</span>
                   </div>
                 </div>
 
                 {/* 3. Totale Fatture Non Pagate */}
-                <div className="grid grid-cols-4 gap-2 text-center border-t border-slate-800/80 pt-1.5">
-                  <div className="bg-slate-800/60 p-1 rounded border border-rose-500/20">
-                    <span className="block text-[9px] font-semibold text-rose-400 uppercase">🔴 Non Pagate (N.)</span>
-                    <span className="text-xs font-bold font-mono text-white">{controlUnpaidInvoices.length}</span>
+                <div className="grid grid-cols-4 gap-2 text-center border-t border-slate-200 pt-1.5">
+                  <div className="bg-rose-50/50 p-1 rounded border border-rose-200">
+                    <span className="block text-[9px] font-bold text-rose-800 uppercase">🔴 Non Pagate (N.)</span>
+                    <span className="text-xs font-bold font-mono text-slate-800">{controlUnpaidInvoices.length}</span>
                   </div>
-                  <div className="bg-slate-800/60 p-1 rounded border border-rose-500/20">
-                    <span className="block text-[9px] font-semibold text-rose-400 uppercase">Imp. Da Incassare</span>
-                    <span className="text-xs font-bold font-mono text-indigo-300">€ {controlUnpaidTaxable.toFixed(2)}</span>
+                  <div className="bg-rose-50/50 p-1 rounded border border-rose-200">
+                    <span className="block text-[9px] font-bold text-rose-800 uppercase">Imp. Da Incassare</span>
+                    <span className="text-xs font-bold font-mono text-slate-800">€ {controlUnpaidTaxable.toFixed(2)}</span>
                   </div>
-                  <div className="bg-slate-800/60 p-1 rounded border border-rose-500/20">
-                    <span className="block text-[9px] font-semibold text-rose-400 uppercase">IVA Da Incassare</span>
-                    <span className="text-xs font-bold font-mono text-amber-300">€ {controlUnpaidVat.toFixed(2)}</span>
+                  <div className="bg-rose-50/50 p-1 rounded border border-rose-200">
+                    <span className="block text-[9px] font-bold text-rose-800 uppercase">IVA Da Incassare</span>
+                    <span className="text-xs font-bold font-mono text-slate-800">€ {controlUnpaidVat.toFixed(2)}</span>
                   </div>
-                  <div className="bg-slate-800/60 p-1 rounded border border-rose-500/20">
-                    <span className="block text-[9px] font-semibold text-rose-400 uppercase">Tot. Da Incassare</span>
-                    <span className="text-xs font-bold font-mono text-rose-400">€ {controlUnpaidCollection.toFixed(2)}</span>
+                  <div className="bg-rose-50/50 p-1 rounded border border-rose-200">
+                    <span className="block text-[9px] font-bold text-rose-800 uppercase">Tot. Da Incassare</span>
+                    <span className="text-xs font-bold font-mono text-rose-700 font-bold">€ {controlUnpaidCollection.toFixed(2)}</span>
                   </div>
                 </div>
 
               </div>
 
               {/* Footer Chiusura */}
-              <div className="flex justify-end pt-1 border-t border-slate-700 shrink-0">
+              <div className="flex justify-end pt-1 border-t border-slate-200 shrink-0">
                 <button 
                   onClick={() => setControlModalOpen(false)}
-                  className="px-4 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-medium text-xs transition-colors"
+                  className="px-3.5 py-1 rounded border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs transition-colors"
                 >
                   Chiudi
                 </button>
@@ -1319,71 +1326,71 @@ export default function InvoiceDashboard() {
 
         {/* Modal Gestione (Prospetto Generale & Grafico) */}
         {isManagementOpen && (
-          <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-5xl w-full shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-3 z-50 overflow-y-auto">
+            <div className="bg-white border border-slate-400 rounded shadow-2xl p-5 max-w-5xl w-full space-y-4 max-h-[90vh] overflow-y-auto text-xs">
               
-              <div className="flex justify-between items-center border-b border-slate-700 pb-4">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-2">
                 <div>
-                  <h2 className="text-2xl font-bold text-white">Prospetto Generale di Gestione</h2>
-                  <p className="text-slate-400 text-sm mt-1">Riepilogo finanziario complessivo di tutte le fatture nel database suddiviso per anno</p>
+                  <h2 className="font-bold text-slate-800 uppercase tracking-wide text-sm">Prospetto Generale di Gestione</h2>
+                  <p className="text-slate-500 text-[11px]">Riepilogo finanziario complessivo di tutte le fatture nel database suddiviso per anno</p>
                 </div>
                 <button 
                   onClick={() => setIsManagementOpen(false)} 
-                  className="text-slate-400 hover:text-white p-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
+                  className="text-slate-400 hover:text-slate-700 p-1 rounded bg-slate-100 transition-colors text-xs"
                 >
                   ✕ Chiudi
                 </button>
               </div>
 
-              {/* Tabella Prospetto Generale */}
-              <div className="bg-slate-900 p-5 rounded-xl border border-slate-700 shadow-inner space-y-3">
-                <h3 className="text-indigo-400 font-bold uppercase tracking-wider text-sm flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-indigo-400"></span> Totali per Anno di Emissione
+              {/* Tabella Prospetto Generale stile Excel */}
+              <div className="bg-slate-50 p-4 rounded border border-slate-300 shadow-xs space-y-2">
+                <h3 className="font-bold text-emerald-800 uppercase tracking-wider text-xs flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-700"></span> Totali per Anno di Emissione
                 </h3>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+                  <table className="w-full text-left text-xs border-collapse border border-slate-300">
                     <thead>
-                      <tr className="border-b border-slate-800 text-slate-400">
-                        <th className="py-3 px-4">Anno</th>
-                        <th className="py-3 px-4 text-center">N° Fatture</th>
-                        <th className="py-3 px-4 text-right">Imponibile</th>
-                        <th className="py-3 px-4 text-right">IVA</th>
-                        <th className="py-3 px-4 text-right">Incasso Totale</th>
+                      <tr className="bg-slate-200 border-b border-slate-300 text-slate-700">
+                        <th className="py-2 px-3 border-r border-slate-300">Anno</th>
+                        <th className="py-2 px-3 border-r border-slate-300 text-center">N° Fatture</th>
+                        <th className="py-2 px-3 border-r border-slate-300 text-right">Imponibile</th>
+                        <th className="py-2 px-3 border-r border-slate-300 text-right">IVA</th>
+                        <th className="py-2 px-3 text-right">Incasso Totale</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800">
-                      {sortedGeneralYears.map(year => {
+                    <tbody className="divide-y divide-slate-200">
+                      {sortedGeneralYears.map((year, idx) => {
                         const data = generalByYear[year]
                         return (
-                          <tr key={`general-${year}`} className="hover:bg-slate-800/50">
-                            <td className="py-3 px-4 font-semibold text-white">{year}</td>
-                            <td className="py-3 px-4 text-center text-slate-300">{data.count}</td>
-                            <td className="py-3 px-4 text-right text-slate-300">€ {data.taxable.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            <td className="py-3 px-4 text-right text-slate-300">€ {data.vat.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            <td className="py-3 px-4 text-right font-bold text-emerald-400">€ {data.total.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <tr key={`general-${year}`} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
+                            <td className="py-2 px-3 border-r border-slate-200 font-semibold text-slate-900">{year}</td>
+                            <td className="py-2 px-3 border-r border-slate-200 text-center text-slate-700">{data.count}</td>
+                            <td className="py-2 px-3 border-r border-slate-200 text-right text-slate-700 font-mono">€ {data.taxable.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <td className="py-2 px-3 border-r border-slate-200 text-right text-slate-700 font-mono">€ {data.vat.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <td className="py-2 px-3 text-right font-bold text-emerald-800 font-mono">€ {data.total.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                           </tr>
                         )
                       })}
                     </tbody>
                     <tfoot>
-                      <tr className="border-t-2 border-indigo-500/40 bg-slate-950/60 font-bold">
-                        <td className="py-3 px-4 text-white uppercase text-xs">Totale Generale</td>
-                        <td className="py-3 px-4 text-center text-white">{generalTotals.count}</td>
-                        <td className="py-3 px-4 text-right text-slate-200">€ {generalTotals.taxable.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        <td className="py-3 px-4 text-right text-slate-200">€ {generalTotals.vat.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        <td className="py-3 px-4 text-right text-emerald-400">€ {generalTotals.total.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      <tr className="border-t-2 border-emerald-700 bg-slate-200 font-bold text-slate-800">
+                        <td className="py-2 px-3 border-r border-slate-300 uppercase">Totale Generale</td>
+                        <td className="py-2 px-3 border-r border-slate-300 text-center">{generalTotals.count}</td>
+                        <td className="py-2 px-3 border-r border-slate-300 text-right font-mono">€ {generalTotals.taxable.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="py-2 px-3 border-r border-slate-300 text-right font-mono">€ {generalTotals.vat.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="py-2 px-3 text-right text-emerald-800 font-mono">€ {generalTotals.total.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                       </tr>
                     </tfoot>
                   </table>
                 </div>
               </div>
 
-              {/* Grafico a linee (Imponibile per Anno) */}
-              <div className="bg-slate-900 p-5 rounded-xl border border-slate-700 shadow-inner space-y-3">
-                <h3 className="text-white font-bold uppercase tracking-wider text-sm flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-indigo-400"></span> Andamento Imponibile per Anno
+              {/* Grafico a linee */}
+              <div className="bg-slate-50 p-4 rounded border border-slate-300 shadow-xs space-y-2">
+                <h3 className="font-bold text-slate-800 uppercase tracking-wider text-xs flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-700"></span> Andamento Imponibile per Anno
                 </h3>
-                <div className="h-72 relative w-full">
+                <div className="h-64 relative w-full">
                   <canvas ref={chartRef}></canvas>
                 </div>
               </div>
@@ -1394,20 +1401,20 @@ export default function InvoiceDashboard() {
 
         {/* Modal Selezione Cliente per Modifica/Cancella */}
         {isSelectClientModalOpen && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6">
-              <div className="flex justify-between items-center border-b border-slate-700 pb-4">
-                <h2 className="text-xl font-bold text-white">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-3 z-50 no-print text-xs">
+            <div className="bg-white border border-slate-400 rounded shadow-2xl p-5 max-w-sm w-full space-y-4">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                <h2 className="font-bold text-slate-800 uppercase tracking-wide">
                   {clientActionType === 'edit' ? 'Seleziona Cliente da Modificare' : 'Seleziona Cliente da Eliminare'}
                 </h2>
-                <button onClick={() => setIsSelectClientModalOpen(false)} className="text-slate-400 hover:text-white">✕</button>
+                <button onClick={() => setIsSelectClientModalOpen(false)} className="text-slate-400 hover:text-slate-700">✕</button>
               </div>
 
-              <form onSubmit={handleConfirmClientSelection} className="space-y-4">
+              <form onSubmit={handleConfirmClientSelection} className="space-y-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Cliente</label>
+                  <label className="block font-bold text-slate-600 mb-1">CLIENTE</label>
                   <select 
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                    className="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 focus:bg-white focus:border-emerald-600 outline-none text-xs"
                     value={targetClientId}
                     onChange={(e) => setTargetClientId(e.target.value)}
                     required
@@ -1418,19 +1425,19 @@ export default function InvoiceDashboard() {
                   </select>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
                   <button 
                     type="button" 
                     onClick={() => setIsSelectClientModalOpen(false)}
-                    className="px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-700 font-medium transition-colors"
+                    className="px-3 py-1.5 rounded border border-slate-300 text-slate-600 hover:bg-slate-100 font-medium transition-colors"
                   >
                     Annulla
                   </button>
                   <button 
                     type="submit" 
-                    className={`px-5 py-2.5 rounded-xl font-semibold text-white shadow-lg transition-all ${clientActionType === 'delete' ? 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/30' : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/30'}`}
+                    className={`px-3.5 py-1.5 rounded font-semibold text-white shadow-xs transition-colors ${clientActionType === 'delete' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-700 hover:bg-emerald-800'}`}
                   >
-                    {clientActionType === 'edit' ? 'Avanti' : 'Elimina Cliente'}
+                    {clientActionType === 'edit' ? 'Avanti' : 'Elimina'}
                   </button>
                 </div>
               </form>
@@ -1440,20 +1447,20 @@ export default function InvoiceDashboard() {
 
         {/* Modal Selezione Fattura per Modifica/Cancella */}
         {isSelectInvoiceModalOpen && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6">
-              <div className="flex justify-between items-center border-b border-slate-700 pb-4">
-                <h2 className="text-xl font-bold text-white">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-3 z-50 no-print text-xs">
+            <div className="bg-white border border-slate-400 rounded shadow-2xl p-5 max-w-sm w-full space-y-4">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                <h2 className="font-bold text-slate-800 uppercase tracking-wide">
                   {invoiceActionType === 'edit' ? 'Seleziona Fattura da Modificare' : 'Seleziona Fattura da Eliminare'}
                 </h2>
-                <button onClick={() => setIsSelectInvoiceModalOpen(false)} className="text-slate-400 hover:text-white">✕</button>
+                <button onClick={() => setIsSelectInvoiceModalOpen(false)} className="text-slate-400 hover:text-slate-700">✕</button>
               </div>
 
-              <form onSubmit={handleConfirmInvoiceSelection} className="space-y-4">
+              <form onSubmit={handleConfirmInvoiceSelection} className="space-y-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Fattura</label>
+                  <label className="block font-bold text-slate-600 mb-1">FATTURA</label>
                   <select 
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                    className="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 focus:bg-white focus:border-emerald-600 outline-none text-xs"
                     value={targetInvoiceId}
                     onChange={(e) => setTargetInvoiceId(e.target.value)}
                     required
@@ -1471,19 +1478,19 @@ export default function InvoiceDashboard() {
                   </select>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
                   <button 
                     type="button" 
                     onClick={() => setIsSelectInvoiceModalOpen(false)}
-                    className="px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-700 font-medium transition-colors"
+                    className="px-3 py-1.5 rounded border border-slate-300 text-slate-600 hover:bg-slate-100 font-medium transition-colors"
                   >
                     Annulla
                   </button>
                   <button 
                     type="submit" 
-                    className={`px-5 py-2.5 rounded-xl font-semibold text-white shadow-lg transition-all ${invoiceActionType === 'delete' ? 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/30' : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/30'}`}
+                    className={`px-3.5 py-1.5 rounded font-semibold text-white shadow-xs transition-colors ${invoiceActionType === 'delete' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-700 hover:bg-emerald-800'}`}
                   >
-                    {invoiceActionType === 'edit' ? 'Avanti' : 'Elimina Fattura'}
+                    {invoiceActionType === 'edit' ? 'Avanti' : 'Elimina'}
                   </button>
                 </div>
               </form>
@@ -1491,26 +1498,26 @@ export default function InvoiceDashboard() {
           </div>
         )}
 
-        {/* Modal Aggiungi/Modifica Cliente */}
+        {/* Modal Aggiungi/Modifica Cliente stile Excel */}
         {isClientModalOpen && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6">
-              <div className="flex justify-between items-center border-b border-slate-700 pb-4">
-                <h2 className="text-xl font-bold text-white">{isClientEditMode ? 'Modifica Cliente' : 'Nuovo Cliente'}</h2>
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-3 z-50 no-print text-xs">
+            <div className="bg-white border border-slate-400 rounded shadow-2xl p-5 max-w-sm w-full space-y-4">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                <h2 className="font-bold text-slate-800 uppercase tracking-wide">{isClientEditMode ? 'Modifica Cliente' : 'Nuovo Cliente'}</h2>
                 <button 
                   onClick={() => setIsClientModalOpen(false)} 
-                  className="text-slate-400 hover:text-white transition-colors"
+                  className="text-slate-400 hover:text-slate-700"
                 >
                   ✕
                 </button>
               </div>
 
-              <form onSubmit={handleSaveClient} className="space-y-4">
+              <form onSubmit={handleSaveClient} className="space-y-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Nome Azienda / Cliente *</label>
+                  <label className="block font-bold text-slate-600 mb-1">NOME AZIENDA / CLIENTE *</label>
                   <input 
                     type="text" 
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                    className="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 focus:bg-white focus:border-emerald-600 outline-none text-xs"
                     value={newClientName}
                     onChange={(e) => setNewClientName(e.target.value)}
                     placeholder="Es. ACME S.R.L."
@@ -1518,19 +1525,19 @@ export default function InvoiceDashboard() {
                   />
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
                   <button 
                     type="button" 
                     onClick={() => setIsClientModalOpen(false)}
-                    className="px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-700 font-medium transition-colors"
+                    className="px-3 py-1.5 rounded border border-slate-300 text-slate-600 hover:bg-slate-100 font-medium transition-colors"
                   >
                     Annulla
                   </button>
                   <button 
                     type="submit" 
-                    className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-600/30 transition-all"
+                    className="px-3.5 py-1.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-semibold shadow-xs transition-colors"
                   >
-                    {isClientEditMode ? 'Salva Modifiche' : 'Salva Cliente'}
+                    Salva
                   </button>
                 </div>
               </form>
@@ -1540,27 +1547,27 @@ export default function InvoiceDashboard() {
 
         {/* Modal Prospetto Cliente con Autocomplete */}
         {isProspectOpen && (
-          <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-6xl w-full shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto printable-prospect-container">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-3 z-50 overflow-y-auto">
+            <div className="bg-white border border-slate-400 rounded shadow-2xl p-5 max-w-5xl w-full space-y-4 max-h-[90vh] overflow-y-auto printable-prospect-container text-xs">
               
-              <div className="flex justify-between items-center border-b border-slate-700 pb-4 no-print">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-2 no-print">
                 <div>
-                  <h2 className="text-2xl font-bold text-white">Prospetto Finanziario Cliente</h2>
-                  <p className="text-slate-400 text-sm mt-1">Seleziona un cliente per visualizzare il dettaglio e i totali per anno</p>
+                  <h2 className="font-bold text-slate-800 uppercase tracking-wide text-sm">Prospetto Finanziario Cliente</h2>
+                  <p className="text-slate-500 text-[11px]">Seleziona un cliente per visualizzare il dettaglio e i totali per anno</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <button 
                     onClick={() => window.print()} 
-                    className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold text-sm shadow-lg transition-colors"
+                    className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded font-semibold text-xs shadow-xs transition-colors"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                     </svg>
-                    Stampa Prospetto
+                    Stampa
                   </button>
                   <button 
                     onClick={() => setIsProspectOpen(false)} 
-                    className="text-slate-400 hover:text-white p-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
+                    className="text-slate-400 hover:text-slate-700 p-1.5 rounded bg-slate-100 transition-colors text-xs"
                   >
                     ✕ Chiudi
                   </button>
@@ -1585,12 +1592,12 @@ export default function InvoiceDashboard() {
               </div>
 
               {/* Selezione Cliente con Autocomplete per il Prospetto */}
-              <div className="bg-slate-900 p-4 rounded-xl border border-slate-700 max-w-md no-print relative">
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Cerca Cliente (es. GRU)</label>
+              <div className="bg-slate-50 p-3 rounded border border-slate-300 max-w-sm no-print relative">
+                <label className="block font-bold text-slate-600 mb-1">CERCA CLIENTE (ES. GRU)</label>
                 <div className="relative">
                   <input 
                     type="text"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                    className="w-full bg-white border border-slate-300 rounded p-1.5 text-slate-800 focus:border-emerald-600 outline-none text-xs"
                     placeholder="Digita per cercare un cliente..."
                     value={prospectClientSearch}
                     onChange={(e) => {
@@ -1608,7 +1615,7 @@ export default function InvoiceDashboard() {
                         setProspectClientId('')
                         setProspectClientSearch('')
                       }}
-                      className="absolute right-3 top-3.5 text-slate-400 hover:text-white text-xs font-bold"
+                      className="absolute right-2 top-2 text-slate-400 hover:text-slate-700 text-xs font-bold"
                     >
                       ✕
                     </button>
@@ -1616,7 +1623,7 @@ export default function InvoiceDashboard() {
                 </div>
 
                 {prospectDropdownOpen && (
-                  <div className="absolute left-4 right-4 mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-30">
+                  <div className="absolute left-3 right-3 mt-1 bg-white border border-slate-300 rounded shadow-lg max-h-40 overflow-y-auto z-30 divide-y divide-slate-100">
                     {clientsList
                       .filter(c => c.name.toLowerCase().includes(prospectClientSearch.toLowerCase()))
                       .map(clientItem => (
@@ -1629,98 +1636,98 @@ export default function InvoiceDashboard() {
                             setProspectFilterYear('')
                             setProspectFilterStatus('all')
                           }}
-                          className="px-4 py-2.5 text-sm text-slate-200 hover:bg-slate-700 hover:text-white cursor-pointer"
+                          className="px-3 py-2 text-xs text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 cursor-pointer"
                         >
                           {clientItem.name}
                         </div>
                       ))}
                     {clientsList.filter(c => c.name.toLowerCase().includes(prospectClientSearch.toLowerCase())).length === 0 && (
-                      <div className="px-4 py-2.5 text-sm text-slate-500 italic">Nessun cliente trovato</div>
+                      <div className="px-3 py-2 text-xs text-slate-400 italic">Nessun cliente trovato</div>
                     )}
                   </div>
                 )}
               </div>
 
               {prospectClientId ? (
-                <div className="space-y-6">
+                <div className="space-y-4">
                   
                   {/* Sezione Interattiva a Schermo (Tabelle Pagate e Non Pagate) */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 no-print">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 no-print">
                     
-                    {/* Tabella Pagate */}
-                    <div className="bg-slate-900 p-5 rounded-xl border border-slate-700 shadow-inner space-y-3">
-                      <h3 className="text-emerald-400 font-bold uppercase tracking-wider text-sm flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> 1. Fatture Pagate
+                    {/* Tabella Pagate stile Excel */}
+                    <div className="bg-slate-50 p-3 rounded border border-slate-300 shadow-xs space-y-2">
+                      <h3 className="font-bold text-emerald-800 uppercase tracking-wider text-xs flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-700"></span> 1. Fatture Pagate
                       </h3>
                       <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs">
+                        <table className="w-full text-left text-xs border-collapse border border-slate-300">
                           <thead>
-                            <tr className="border-b border-slate-800 text-slate-400">
-                              <th className="py-2 px-3">Anno</th>
-                              <th className="py-2 px-3 text-right">Imponibile</th>
-                              <th className="py-2 px-3 text-right">IVA</th>
-                              <th className="py-2 px-3 text-right">Incasso</th>
+                            <tr className="bg-slate-200 border-b border-slate-300 text-slate-700">
+                              <th className="py-1.5 px-2.5 border-r border-slate-300">Anno</th>
+                              <th className="py-1.5 px-2.5 border-r border-slate-300 text-right">Imponibile</th>
+                              <th className="py-1.5 px-2.5 border-r border-slate-300 text-right">IVA</th>
+                              <th className="py-1.5 px-2.5 text-right">Incasso</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-800">
-                            {allProspectYears.map(year => {
+                          <tbody className="divide-y divide-slate-200">
+                            {allProspectYears.map((year, idx) => {
                               const data = paidByYear[year] || { taxable: 0, vat: 0, total: 0 }
                               return (
-                                <tr key={`paid-${year}`} className="hover:bg-slate-800/50">
-                                  <td className="py-2.5 px-3 font-semibold text-white">{year}</td>
-                                  <td className="py-2.5 px-3 text-right text-slate-300">€ {data.taxable.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                  <td className="py-2.5 px-3 text-right text-slate-300">€ {data.vat.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                  <td className="py-2.5 px-3 text-right font-bold text-emerald-400">€ {data.total.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <tr key={`paid-${year}`} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
+                                  <td className="py-1.5 px-2.5 border-r border-slate-200 font-semibold text-slate-900">{year}</td>
+                                  <td className="py-1.5 px-2.5 border-r border-slate-200 text-right text-slate-700 font-mono">€ {data.taxable.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                  <td className="py-1.5 px-2.5 border-r border-slate-200 text-right text-slate-700 font-mono">€ {data.vat.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                  <td className="py-1.5 px-2.5 text-right font-bold text-emerald-800 font-mono">€ {data.total.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                 </tr>
                               )
                             })}
                           </tbody>
                           <tfoot>
-                            <tr className="border-t-2 border-emerald-500/40 bg-slate-950/60 font-bold">
-                              <td className="py-2.5 px-3 text-white uppercase text-[10px]">Totale</td>
-                              <td className="py-2.5 px-3 text-right text-slate-200">€ {paidTotals.taxable.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                              <td className="py-2.5 px-3 text-right text-slate-200">€ {paidTotals.vat.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                              <td className="py-2.5 px-3 text-right text-emerald-400">€ {paidTotals.total.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <tr className="border-t-2 border-emerald-700 bg-slate-200 font-bold text-slate-800">
+                              <td className="py-1.5 px-2.5 border-r border-slate-300 uppercase">Totale</td>
+                              <td className="py-1.5 px-2.5 border-r border-slate-300 text-right font-mono">€ {paidTotals.taxable.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="py-1.5 px-2.5 border-r border-slate-300 text-right font-mono">€ {paidTotals.vat.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="py-1.5 px-2.5 text-right text-emerald-800 font-mono">€ {paidTotals.total.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                             </tr>
                           </tfoot>
                         </table>
                       </div>
                     </div>
 
-                    {/* Tabella Non Pagate */}
-                    <div className="bg-slate-900 p-5 rounded-xl border border-slate-700 shadow-inner space-y-3">
-                      <h3 className="text-amber-400 font-bold uppercase tracking-wider text-sm flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span> 2. Fatture Non Pagate
+                    {/* Tabella Non Pagate stile Excel */}
+                    <div className="bg-slate-50 p-3 rounded border border-slate-300 shadow-xs space-y-2">
+                      <h3 className="font-bold text-amber-800 uppercase tracking-wider text-xs flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-amber-600"></span> 2. Fatture Non Pagate
                       </h3>
                       <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs">
+                        <table className="w-full text-left text-xs border-collapse border border-slate-300">
                           <thead>
-                            <tr className="border-b border-slate-800 text-slate-400">
-                              <th className="py-2 px-3">Anno</th>
-                              <th className="py-2 px-3 text-right">Imponibile</th>
-                              <th className="py-2 px-3 text-right">IVA</th>
-                              <th className="py-2 px-3 text-right">Incasso</th>
+                            <tr className="bg-slate-200 border-b border-slate-300 text-slate-700">
+                              <th className="py-1.5 px-2.5 border-r border-slate-300">Anno</th>
+                              <th className="py-1.5 px-2.5 border-r border-slate-300 text-right">Imponibile</th>
+                              <th className="py-1.5 px-2.5 border-r border-slate-300 text-right">IVA</th>
+                              <th className="py-1.5 px-2.5 text-right">Incasso</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-800">
-                            {allProspectYears.map(year => {
+                          <tbody className="divide-y divide-slate-200">
+                            {allProspectYears.map((year, idx) => {
                               const data = unpaidByYear[year] || { taxable: 0, vat: 0, total: 0 }
                               return (
-                                <tr key={`unpaid-${year}`} className="hover:bg-slate-800/50">
-                                  <td className="py-2.5 px-3 font-semibold text-white">{year}</td>
-                                  <td className="py-2.5 px-3 text-right text-slate-300">€ {data.taxable.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                  <td className="py-2.5 px-3 text-right text-slate-300">€ {data.vat.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                  <td className="py-2.5 px-3 text-right font-bold text-amber-400">€ {data.total.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <tr key={`unpaid-${year}`} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
+                                  <td className="py-1.5 px-2.5 border-r border-slate-200 font-semibold text-slate-900">{year}</td>
+                                  <td className="py-1.5 px-2.5 border-r border-slate-200 text-right text-slate-700 font-mono">€ {data.taxable.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                  <td className="py-1.5 px-2.5 border-r border-slate-200 text-right text-slate-700 font-mono">€ {data.vat.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                  <td className="py-1.5 px-2.5 text-right font-bold text-amber-800 font-mono">€ {data.total.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                 </tr>
                               )
                             })}
                           </tbody>
                           <tfoot>
-                            <tr className="border-t-2 border-amber-500/40 bg-slate-950/60 font-bold">
-                              <td className="py-2.5 px-3 text-white uppercase text-[10px]">Totale</td>
-                              <td className="py-2.5 px-3 text-right text-slate-200">€ {unpaidTotals.taxable.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                              <td className="py-2.5 px-3 text-right text-slate-200">€ {unpaidTotals.vat.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                              <td className="py-2.5 px-3 text-right text-amber-400">€ {unpaidTotals.total.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <tr className="border-t-2 border-amber-600 bg-slate-200 font-bold text-slate-800">
+                              <td className="py-1.5 px-2.5 border-r border-slate-300 uppercase">Totale</td>
+                              <td className="py-1.5 px-2.5 border-r border-slate-300 text-right font-mono">€ {unpaidTotals.taxable.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="py-1.5 px-2.5 border-r border-slate-300 text-right font-mono">€ {unpaidTotals.vat.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="py-1.5 px-2.5 text-right text-amber-800 font-mono">€ {unpaidTotals.total.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                             </tr>
                           </tfoot>
                         </table>
@@ -1807,13 +1814,13 @@ export default function InvoiceDashboard() {
                   </div>
 
                   {/* Sezione Filtri Anno e Stato per l'Elenco Fatture del Prospetto */}
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 p-4 rounded-xl border border-slate-700 no-print">
-                    <h3 className="text-white font-bold text-sm">Elenco Fatture del Cliente</h3>
-                    <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                      <div className="flex items-center gap-2 flex-1 sm:flex-initial">
-                        <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Anno:</label>
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-50 p-3 rounded border border-slate-300 no-print">
+                    <h3 className="font-bold text-slate-800 text-xs">Elenco Fatture del Cliente</h3>
+                    <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+                      <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+                        <label className="font-bold text-slate-600 uppercase text-[11px] whitespace-nowrap">Anno:</label>
                         <select 
-                          className="bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-36"
+                          className="bg-white border border-slate-300 rounded p-1.5 text-slate-800 text-xs outline-none w-full sm:w-32"
                           value={prospectFilterYear}
                           onChange={(e) => setProspectFilterYear(e.target.value)}
                         >
@@ -1826,10 +1833,10 @@ export default function InvoiceDashboard() {
                         </select>
                       </div>
 
-                      <div className="flex items-center gap-2 flex-1 sm:flex-initial">
-                        <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Stato:</label>
+                      <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+                        <label className="font-bold text-slate-600 uppercase text-[11px] whitespace-nowrap">Stato:</label>
                         <select 
-                          className="bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-40"
+                          className="bg-white border border-slate-300 rounded p-1.5 text-slate-800 text-xs outline-none w-full sm:w-36"
                           value={prospectFilterStatus}
                           onChange={(e) => setProspectFilterStatus(e.target.value)}
                         >
@@ -1841,22 +1848,22 @@ export default function InvoiceDashboard() {
                     </div>
                   </div>
 
-                  {/* Tabella Dettaglio Fatture INTERATTIVA a schermo */}
-                  <div className="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden no-print">
-                    <div className="overflow-x-auto max-h-64 overflow-y-auto">
+                  {/* Tabella Dettaglio Fatture INTERATTIVA a schermo stile Excel */}
+                  <div className="bg-white border border-slate-300 shadow-xs rounded overflow-hidden no-print">
+                    <div className="overflow-x-auto max-h-56 overflow-y-auto">
                       <table className="w-full text-left border-collapse text-xs">
-                        <thead className="sticky top-0 bg-slate-950 text-slate-400 uppercase tracking-wider">
+                        <thead className="sticky top-0 bg-slate-200 text-slate-700 font-semibold uppercase">
                           <tr>
-                            <th className="py-3 px-4">Data Emissione</th>
-                            <th className="py-3 px-4">N° Fattura</th>
-                            <th className="py-3 px-4">Imponibile</th>
-                            <th className="py-3 px-4">IVA</th>
-                            <th className="py-3 px-4">Incasso</th>
-                            <th className="py-3 px-4 no-print">Stato</th>
+                            <th className="py-2 px-3 border-r border-slate-300">Data Emissione</th>
+                            <th className="py-2 px-3 border-r border-slate-300">N° Fattura</th>
+                            <th className="py-2 px-3 border-r border-slate-300 text-right">Imponibile</th>
+                            <th className="py-2 px-3 border-r border-slate-300 text-right">IVA</th>
+                            <th className="py-2 px-3 border-r border-slate-300 text-right">Incasso</th>
+                            <th className="py-2 px-3 no-print">Stato</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-800">
-                          {prospectInvoices.map((item) => {
+                        <tbody className="divide-y divide-slate-200">
+                          {prospectInvoices.map((item, idx) => {
                             const matchesYear = !prospectFilterYear || (item.issuedate && item.issuedate.substring(0, 4) === prospectFilterYear)
                             let matchesStatus = true
                             if (prospectFilterStatus === 'unpaid') matchesStatus = !item.paymentdate
@@ -1868,17 +1875,17 @@ export default function InvoiceDashboard() {
                             const displayInvoiceNum = item.invoicenumber && yearFromDate ? `${item.invoicenumber}/${yearFromDate}` : item.invoicenumber
 
                             return (
-                              <tr key={item.id} className="hover:bg-slate-800/40">
-                                <td className="py-3 px-4 text-slate-300">{formatDateToIT(item.issuedate)}</td>
-                                <td className="py-3 px-4 font-bold text-indigo-400">{displayInvoiceNum}</td>
-                                <td className="py-3 px-4 text-slate-300">€ {Number(item.taxableamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                <td className="py-3 px-4 text-slate-300">€ {Number(item.vatamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                <td className="py-3 px-4 font-semibold text-emerald-400">€ {Number(item.totalamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                <td className="py-3 px-4 no-print">
+                              <tr key={item.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-emerald-50/50`}>
+                                <td className="py-1.5 px-3 border-r border-slate-200 text-slate-700">{formatDateToIT(item.issuedate)}</td>
+                                <td className="py-1.5 px-3 border-r border-slate-200 font-bold text-emerald-800 font-mono">{displayInvoiceNum}</td>
+                                <td className="py-1.5 px-3 border-r border-slate-200 text-right text-slate-700 font-mono">€ {Number(item.taxableamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="py-1.5 px-3 border-r border-slate-200 text-right text-slate-700 font-mono">€ {Number(item.vatamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="py-1.5 px-3 border-r border-slate-200 text-right font-bold text-emerald-800 font-mono">€ {Number(item.totalamount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="py-1.5 px-3 no-print">
                                   {item.paymentdate ? (
-                                    <span className="text-emerald-400 font-medium">{formatDateToIT(item.paymentdate)}</span>
+                                    <span className="text-emerald-700 font-semibold">{formatDateToIT(item.paymentdate)}</span>
                                   ) : (
-                                    <span className="text-amber-500 italic">Da pagare</span>
+                                    <span className="text-amber-600 italic">Da pagare</span>
                                   )}
                                 </td>
                               </tr>
@@ -1934,7 +1941,7 @@ export default function InvoiceDashboard() {
 
                 </div>
               ) : (
-                <div className="py-16 text-center text-slate-500 bg-slate-900 rounded-xl border border-slate-700">
+                <div className="py-12 text-center text-slate-400 bg-slate-50 rounded border border-slate-300 italic">
                   Seleziona un cliente dal menu sopra per generare il prospetto finanziario.
                 </div>
               )}
@@ -1943,30 +1950,30 @@ export default function InvoiceDashboard() {
           </div>
         )}
 
-        {/* Modal Modifica/Inserimento Fattura con Autocomplete Cliente */}
+        {/* Modal Modifica/Inserimento Fattura stile Excel */}
         {isModalOpen && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-6">
-              <div className="flex justify-between items-center border-b border-slate-700 pb-4">
-                <h2 className="text-xl font-bold text-white">
-                  {isEditMode ? 'Modifica Fattura' : 'Nuova Fattura'}
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-3 z-50 no-print text-xs">
+            <div className="bg-white border border-slate-400 rounded shadow-2xl p-5 max-w-lg w-full space-y-4">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                <h2 className="font-bold text-slate-800 uppercase tracking-wide">
+                  {isEditMode ? '✏️ Modifica Fattura' : '➕ Nuova Fattura'}
                 </h2>
                 <button 
                   onClick={() => setIsModalOpen(false)} 
-                  className="text-slate-400 hover:text-white transition-colors"
+                  className="text-slate-400 hover:text-slate-700"
                 >
                   ✕
                 </button>
               </div>
 
-              <form onSubmit={handleSaveInvoice} className="space-y-4">
+              <form onSubmit={handleSaveInvoice} className="space-y-3">
                 
                 {/* Campo Autocomplete Cliente in inserimento/modifica */}
                 <div className="relative">
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Cliente *</label>
+                  <label className="block font-bold text-slate-600 mb-1">CLIENTE *</label>
                   <input 
                     type="text"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                    className="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 focus:bg-white focus:border-emerald-600 outline-none text-xs"
                     placeholder="Digita per cercare un cliente (es. GRU)..."
                     value={invoiceClientSearch}
                     onChange={(e) => {
@@ -1979,7 +1986,7 @@ export default function InvoiceDashboard() {
                   />
 
                   {invoiceClientDropdownOpen && (
-                    <div className="absolute left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-40">
+                    <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-300 rounded shadow-lg max-h-40 overflow-y-auto z-40 divide-y divide-slate-100">
                       {clientsList
                         .filter(c => c.name.toLowerCase().includes(invoiceClientSearch.toLowerCase()))
                         .map(clientItem => (
@@ -1990,34 +1997,34 @@ export default function InvoiceDashboard() {
                               setInvoiceClientSearch(clientItem.name)
                               setInvoiceClientDropdownOpen(false)
                             }}
-                            className="px-4 py-2.5 text-sm text-slate-200 hover:bg-slate-800 hover:text-white cursor-pointer"
+                            className="px-3 py-2 text-xs text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 cursor-pointer"
                           >
                             {clientItem.name}
                           </div>
                         ))}
                       {clientsList.filter(c => c.name.toLowerCase().includes(invoiceClientSearch.toLowerCase())).length === 0 && (
-                        <div className="px-4 py-2.5 text-sm text-slate-500 italic">Nessun cliente trovato</div>
+                        <div className="px-3 py-2 text-xs text-slate-400 italic">Nessun cliente trovato</div>
                       )}
                     </div>
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">N° Fattura (Auto) *</label>
+                    <label className="block font-bold text-slate-600 mb-1">N° FATTURA (AUTO) *</label>
                     <input 
                       type="text" 
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-300 cursor-not-allowed outline-none font-bold text-indigo-400"
+                      className="w-full bg-slate-100 border border-slate-300 rounded p-2 text-slate-600 cursor-not-allowed outline-none font-bold font-mono"
                       value={invoiceDate && invoiceNumber ? `${invoiceNumber}/${invoiceDate.substring(0, 4)}` : invoiceNumber}
                       readOnly
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Data Emissione *</label>
+                    <label className="block font-bold text-slate-600 mb-1">DATA EMISSIONE *</label>
                     <input 
                       type="date" 
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 focus:bg-white focus:border-emerald-600 outline-none text-xs"
                       value={invoiceDate}
                       onChange={(e) => setInvoiceDate(e.target.value)}
                       required
@@ -2025,35 +2032,35 @@ export default function InvoiceDashboard() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-2.5">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Imponibile (€)</label>
+                    <label className="block font-bold text-slate-600 mb-1">IMPONIBILE (€)</label>
                     <input 
                       type="number" 
                       step="0.01" 
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 focus:bg-white focus:border-emerald-600 outline-none text-xs font-mono"
                       value={taxableAmount}
                       onChange={(e) => setTaxableAmount(e.target.value)}
                       placeholder="0.00"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">IVA (€ - Auto)</label>
+                    <label className="block font-bold text-slate-600 mb-1">IVA (€ - AUTO)</label>
                     <input 
                       type="number" 
                       step="0.01" 
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-400 cursor-not-allowed outline-none"
+                      className="w-full bg-slate-100 border border-slate-300 rounded p-2 text-slate-500 cursor-not-allowed outline-none text-xs font-mono"
                       value={vatAmount}
                       readOnly
                       placeholder="0.00"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Incasso (€ - Auto)</label>
+                    <label className="block font-bold text-slate-600 mb-1">INCASSO (€ - AUTO)</label>
                     <input 
                       type="number" 
                       step="0.01" 
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-400 cursor-not-allowed outline-none"
+                      className="w-full bg-slate-100 border border-slate-300 rounded p-2 text-slate-500 cursor-not-allowed outline-none text-xs font-mono font-bold"
                       value={totalAmount}
                       readOnly
                       placeholder="0.00"
@@ -2062,39 +2069,39 @@ export default function InvoiceDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Data Pagamento</label>
+                  <label className="block font-bold text-slate-600 mb-1">DATA PAGAMENTO</label>
                   <input 
                     type="date" 
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                    className="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 focus:bg-white focus:border-emerald-600 outline-none text-xs"
                     value={paymentDate}
                     onChange={(e) => setPaymentDate(e.target.value)}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Note</label>
+                  <label className="block font-bold text-slate-600 mb-1">NOTE</label>
                   <textarea 
                     rows="2"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                    className="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 focus:bg-white focus:border-emerald-600 outline-none text-xs"
                     value={invoiceNotes}
                     onChange={(e) => setInvoiceNotes(e.target.value)}
                     placeholder="Note o descrizione facoltativa..."
                   />
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
                   <button 
                     type="button" 
                     onClick={() => setIsModalOpen(false)}
-                    className="px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-700 font-medium transition-colors"
+                    className="px-3 py-1.5 rounded border border-slate-300 text-slate-600 hover:bg-slate-100 font-medium transition-colors"
                   >
                     Annulla
                   </button>
                   <button 
                     type="submit" 
-                    className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-600/30 transition-all"
+                    className="px-4 py-1.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-semibold shadow-xs transition-colors"
                   >
-                    Salva Fattura
+                    Salva
                   </button>
                 </div>
               </form>
