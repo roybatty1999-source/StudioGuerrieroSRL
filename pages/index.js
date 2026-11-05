@@ -657,16 +657,16 @@ export default function ServicesDashboard() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Incasso (R / B / X) *</label>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Incasso (A / B / X) *</label>
                     <select 
                       className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
                       value={collectionType}
                       onChange={(e) => setCollectionType(e.target.value)}
                       required
                     >
-                      <option value="R">R (Rimessa diretta)</option>
+                      <option value="A">R (Rimessa diretta)</option>
                       <option value="B">B (Bonifico bancario)</option>
-                      <option value="X">X (Altro / Escluso)</option>
+                      <option value="X">X (Altro)</option>
                     </select>
                   </div>
                 </div>
