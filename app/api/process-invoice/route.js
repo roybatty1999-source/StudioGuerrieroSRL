@@ -1,95 +1,88 @@
+import { GoogleGenAI } from '@google/genai';
 import { createClient } from '@supabase/supabase-js';
-import { GoogleGenAI, Type } from '@google/genai';
+
+// Inizializza Supabase con le credenziali di servizio o anonime del server
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+// Funzione di supporto per attendere qualche secondo in caso di errore 503
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function POST(request) {
   try {
-    // Inizializzazione con le tue variabili d'ambiente attuali
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    );
-
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
     const { filePath } = await request.json();
 
-    // 1. Scarica il file PDF da Supabase Storage
+    if (!filePath) {
+      return Response.json({ error: 'Percorso del file mancante' }, { status: 400 });
+    }
+
+    // 1. Scarica il PDF da Supabase Storage
     const { data: fileData, error: downloadError } = await supabase.storage
       .from('fatture-pdf')
       .download(filePath);
 
-    if (downloadError) throw downloadError;
+    if (downloadError) {
+      throw new Error(`Errore nel download del file da Supabase: ${downloadError.message}`);
+    }
 
+    // Converte il file in array buffer e poi in base64 per Gemini
     const arrayBuffer = await fileData.arrayBuffer();
-    const base64Pdf = Buffer.from(arrayBuffer).toString('base64');
+    const buffer = Buffer.from(arrayBuffer);
+    const base64Pdf = buffer.toString('base64');
 
-    // 2. Chiamata a Gemini per estrazione dati con Schema JSON strutturato
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents: [
-        {
-          inlineData: {
-            mimeType: 'application/pdf',
-            data: base64Pdf
-          }
-        },
-        'Estrai i dati della fattura per la dichiarazione Intrastat.'
-      ],
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            pIvaFornitore: { type: Type.STRING },
-            pIvaCliente: { type: Type.STRING },
-            destinazione: { type: Type.STRING },
-            totaleFattura: { type: Type.NUMBER },
-            articoli: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  descrizione: { type: Type.STRING },
-                  voceDoganale: { type: Type.STRING },
-                  numeroPezzi: { type: Type.NUMBER },
-                  pesoNettoKg: { type: Type.NUMBER },
-                  origine: { type: Type.STRING }
-                },
-                required: ['descrizione', 'voceDoganale']
-              }
-            }
-          },
-          required: ['pIvaFornitore', 'pIvaCliente', 'totaleFattura', 'articoli']
+    let response;
+    let retries = 3; // Numero di tentativi in caso di 503
+    let delay = 2000; // 2 secondi di attesa iniziale
+
+    // 2. Chiamata a Gemini con logica di Retry per i sovraccarichi (503)
+    for (let i = 0; i < retries; i++) {
+      try {
+        response = await ai.models.generateContent({
+          model: 'gemini-3.8-flash',
+          contents: [
+            {
+              inlineData: {
+                mimeType: 'application/pdf',
+                data: base64Pdf,
+              },
+            },
+            {
+              text: "Analizza questa fattura Intrastat, estrai i dati doganali, gli articoli e calcola i pesi stimati della merce strutturando l'output in formato JSON.",
+            },
+          ],
+        });
+        break; // Se ha successo, esce dal ciclo
+      } catch (err) {
+        // Se è l'ultimo tentativo o non riguarda un errore di servizio (503), rilancia l'errore
+        if (i === retries - 1 || (!err.message.includes('503') && !err.message.includes('UNAVAILABLE'))) {
+          throw err;
         }
-      }
-    });
-
-    const extractedData = JSON.parse(response.text);
-
-    // 3. Verifica e calcolo dei pesi mancanti tramite Supabase DB
-    for (const articolo of extractedData.articoli) {
-      if (!articolo.pesoNettoKg || articolo.pesoNettoKg === 0) {
-        const { data: pesoRef } = await supabase
-          .from('pesi_stimati_merce')
-          .select('peso_unitario_kg')
-          .eq('voce_doganale', articolo.voceDoganale)
-          .single();
-
-        if (pesoRef && articolo.numeroPezzi) {
-          articolo.pesoNettoKg = Number((articolo.numeroPezzi * pesoRef.peso_unitario_kg).toFixed(3));
-          articolo.isPesoStimato = true;
-        } else {
-          articolo.pesoNettoKg = 0;
-          articolo.isPesoStimato = true;
-        }
-      } else {
-        articolo.isPesoStimato = false;
+        console.warn(`Tentativo ${i + 1} fallito per sovraccarico (503). Riprovo tra ${delay / 1000} secondi...`);
+        await sleep(delay);
+        delay *= 2; // Raddoppia l'attesa (backoff esponenziale)
       }
     }
 
-    return Response.json(extractedData);
+    // Estrae il testo della risposta generata da Gemini
+    const textResult = response.text ? response.text() : JSON.stringify(response);
 
-  } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    // Pulizia e parsing del JSON restituito da Gemini (rimuove eventuali blocchi markdown di codice)
+    let cleanedJson = textResult.trim();
+    if (cleanedJson.startsWith('```json')) {
+      cleanedJson = cleanedJson.replace(/^```json/, '').replace(/```\$/, '').trim();
+    } else if (cleanedJson.startsWith('```')) {
+      cleanedJson = cleanedJson.replace(/^```/, '').replace(/```$/, '').trim();
+    }
+
+    const parsedData = JSON.parse(cleanedJson);
+
+    return Response.json(parsedData);
+
+  } catch (err) {
+    console.error('Errore durante l\'elaborazione dell\'API:', err);
+    return Response.json({ error: err.message }, { status: 500 });
   }
 }
