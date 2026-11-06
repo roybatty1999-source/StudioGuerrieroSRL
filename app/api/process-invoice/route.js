@@ -25,7 +25,7 @@ export async function POST(request) {
 
     // 2. Chiamata a Gemini per estrazione dati con Schema JSON strutturato
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.8-flash',
       contents: [
         {
           inlineData: {
