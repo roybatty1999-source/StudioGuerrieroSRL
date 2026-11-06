@@ -17,8 +17,14 @@ export default function ServicesDashboard() {
   const [clientFilterSearch, setClientFilterSearch] = useState('')
   const clientMenuRef = useRef(null)
 
-  // Stato per la nota univoca del cliente selezionato
+  // Stato per la nota univoca del cliente selezionato e messaggio di salvataggio
   const [clientNote, setClientNote] = useState('')
+  const [isSavingNote, setIsSavingNote] = useState(false)
+  const [noteSavedMessage, setNoteSavedMessage] = useState(false)
+
+  // Stati per la visibilità delle tabelle (a scomparsa)
+  const [salesVisible, setSalesVisible] = useState(true)
+  const [purchaseVisible, setPurchaseVisible] = useState(true)
 
   // Filtro per Codice CPA Globale ("Ricerca")
   const [selectedCpaFilter, setSelectedCpaFilter] = useState('ALL')
@@ -75,6 +81,7 @@ export default function ServicesDashboard() {
 
   // Carica le note quando cambia il cliente selezionato
   useEffect(() => {
+    setNoteSavedMessage(false)
     if (selectedClientId === 'ALL') {
       setClientNote('')
     } else {
@@ -124,13 +131,22 @@ export default function ServicesDashboard() {
   async function handleSaveClientNote() {
     if (selectedClientId === 'ALL') return
 
+    setIsSavingNote(true)
+    setNoteSavedMessage(false)
+
     const { error } = await supabaseClient
       .from('clients')
       .update({ note: clientNote && clientNote.trim() !== '' ? clientNote : null })
       .eq('id', selectedClientId)
 
-    if (!error) {
+    setIsSavingNote(false)
+
+    if (error) {
+      alert("Errore durante il salvataggio della nota: " + error.message)
+    } else {
+      setNoteSavedMessage(true)
       loadClients()
+      setTimeout(() => setNoteSavedMessage(false), 3000)
     }
   }
 
@@ -276,138 +292,160 @@ export default function ServicesDashboard() {
       <div className="min-h-screen bg-slate-100 text-slate-800 font-sans p-3 sm:p-5">
         <div className="max-w-[98%] mx-auto space-y-4">
           
-          {/* Header Principale in stile Toolbar Excel */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-3 rounded border border-slate-300 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="bg-emerald-700 text-white font-bold px-2.5 py-1 rounded text-sm tracking-wider font-mono">EXCEL</div>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900 leading-tight">Gestione Servizi</h1>
-                <p className="text-slate-500 text-xs">
-                  Filtri attivi: <span className="font-semibold text-slate-700">{currentSelectedClientName}</span> | CPA: <span className="font-semibold text-slate-700">{currentSelectedCpaName}</span>
-                </p>
-              </div>
-            </div>
+          {/* CONTENITORE FISSO IN ALTO (STICKY) CHE CONTIENE HEADER E NOTE CLIENTE */}
+          <div className="sticky top-0 z-40 bg-slate-100 pt-1 pb-2 space-y-3">
             
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Header Principale in stile Toolbar Excel */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-3 rounded border border-slate-300 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="bg-emerald-700 text-white font-bold px-2.5 py-1 rounded text-sm tracking-wider font-mono">EXCEL</div>
+                <div>
+                  <h1 className="text-xl font-bold text-slate-900 leading-tight">Gestione Servizi</h1>
+                  <p className="text-slate-500 text-xs">
+                    Filtri attivi: <span className="font-semibold text-slate-700">{currentSelectedClientName}</span> | CPA: <span className="font-semibold text-slate-700">{currentSelectedCpaName}</span>
+                  </p>
+                </div>
+              </div>
               
-              {/* Menu a Scomparsa "Cliente" */}
-              <div className="relative" ref={clientMenuRef}>
-                <button 
-                  onClick={() => setShowClientMenu(!showClientMenu)}
-                  className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded border border-slate-300 text-xs font-medium shadow-xs"
-                >
-                  <span>👤 Cliente:</span>
-                  <span className="font-bold">{selectedClientId === 'ALL' ? 'Tutti ▾' : `${currentSelectedClientName} ▾`}</span>
-                </button>
+              <div className="flex flex-wrap items-center gap-2">
+                
+                {/* Menu a Scomparsa "Cliente" */}
+                <div className="relative" ref={clientMenuRef}>
+                  <button 
+                    onClick={() => setShowClientMenu(!showClientMenu)}
+                    className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded border border-slate-300 text-xs font-medium shadow-xs"
+                  >
+                    <span>👤 Cliente:</span>
+                    <span className="font-bold">{selectedClientId === 'ALL' ? 'Tutti ▾' : `${currentSelectedClientName} ▾`}</span>
+                  </button>
 
-                {showClientMenu && (
-                  <div className="absolute right-0 mt-1 w-72 bg-white border border-slate-300 rounded shadow-lg p-2 z-50 space-y-2">
-                    <button 
-                      onClick={() => { setSelectedClientId('ALL'); setShowClientMenu(false); setClientFilterSearch(''); }}
-                      className="w-full text-left px-2 py-1 text-xs text-emerald-700 font-bold hover:bg-emerald-50 rounded border border-emerald-200 text-center"
-                    >
-                      Mostra Tutti i Clienti
-                    </button>
-                    
-                    <input 
-                      type="text" 
-                      className="w-full bg-white border border-slate-300 rounded p-1.5 text-slate-800 text-xs outline-none focus:border-emerald-600"
-                      placeholder="Cerca cliente..."
-                      value={clientFilterSearch}
-                      onChange={(e) => setClientFilterSearch(e.target.value)}
-                    />
+                  {showClientMenu && (
+                    <div className="absolute right-0 mt-1 w-72 bg-white border border-slate-300 rounded shadow-lg p-2 z-50 space-y-2">
+                      <button 
+                        onClick={() => { setSelectedClientId('ALL'); setShowClientMenu(false); setClientFilterSearch(''); }}
+                        className="w-full text-left px-2 py-1 text-xs text-emerald-700 font-bold hover:bg-emerald-50 rounded border border-emerald-200 text-center"
+                      >
+                        Mostra Tutti i Clienti
+                      </button>
+                      
+                      <input 
+                        type="text" 
+                        className="w-full bg-white border border-slate-300 rounded p-1.5 text-slate-800 text-xs outline-none focus:border-emerald-600"
+                        placeholder="Cerca cliente..."
+                        value={clientFilterSearch}
+                        onChange={(e) => setClientFilterSearch(e.target.value)}
+                      />
 
-                    <div className="max-h-52 overflow-y-auto divide-y divide-slate-100">
-                      {filteredClientsList.map(client => (
-                        <div 
-                          key={client.id}
-                          onClick={() => { setSelectedClientId(client.id); setShowClientMenu(false); setClientFilterSearch(''); }}
-                          className="p-1.5 hover:bg-slate-100 cursor-pointer text-xs text-slate-700 truncate"
-                          title={client.name}
-                        >
-                          {client.name}
-                        </div>
-                      ))}
-                      {filteredClientsList.length === 0 && (
-                        <div className="p-2 text-xs text-slate-400 italic text-center">Nessun cliente trovato.</div>
-                      )}
+                      <div className="max-h-52 overflow-y-auto divide-y divide-slate-100">
+                        {filteredClientsList.map(client => (
+                          <div 
+                            key={client.id}
+                            onClick={() => { setSelectedClientId(client.id); setShowClientMenu(false); setClientFilterSearch(''); }}
+                            className="p-1.5 hover:bg-slate-100 cursor-pointer text-xs text-slate-700 truncate"
+                            title={client.name}
+                          >
+                            {client.name}
+                          </div>
+                        ))}
+                        {filteredClientsList.length === 0 && (
+                          <div className="p-2 text-xs text-slate-400 italic text-center">Nessun cliente trovato.</div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
 
-              {/* Menu a Scomparsa "Ricerca" CPA */}
-              <div className="relative" ref={cpaSearchMenuRef}>
-                <button 
-                  onClick={() => setShowCpaSearchMenu(!showCpaSearchMenu)}
-                  className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded border border-slate-300 text-xs font-medium shadow-xs"
-                >
-                  <span>🔍 CPA:</span>
-                  <span className="font-bold">{selectedCpaFilter === 'ALL' ? 'Tutti ▾' : `${selectedCpaFilter} ▾`}</span>
-                </button>
+                {/* Menu a Scomparsa "Ricerca" CPA */}
+                <div className="relative" ref={cpaSearchMenuRef}>
+                  <button 
+                    onClick={() => setShowCpaSearchMenu(!showCpaSearchMenu)}
+                    className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded border border-slate-300 text-xs font-medium shadow-xs"
+                  >
+                    <span>🔍 CPA:</span>
+                    <span className="font-bold">{selectedCpaFilter === 'ALL' ? 'Tutti ▾' : `${selectedCpaFilter} ▾`}</span>
+                  </button>
 
-                {showCpaSearchMenu && (
-                  <div className="absolute right-0 mt-1 w-80 bg-white border border-slate-300 rounded shadow-lg p-2 z-50 space-y-2">
-                    <button 
-                      onClick={() => { setSelectedCpaFilter('ALL'); setShowCpaSearchMenu(false); }}
-                      className="w-full text-left px-2 py-1 text-xs text-emerald-700 font-bold hover:bg-emerald-50 rounded border border-emerald-200 text-center"
-                    >
-                      Mostra Tutti i Codici CPA
-                    </button>
-                    
-                    <input 
-                      type="text" 
-                      className="w-full bg-white border border-slate-300 rounded p-1.5 text-slate-800 text-xs outline-none focus:border-emerald-600 font-mono"
-                      placeholder="Cerca codice o descrizione..."
-                      value={cpaMenuSearchQuery}
-                      onChange={(e) => setCpaMenuSearchQuery(e.target.value)}
-                    />
+                  {showCpaSearchMenu && (
+                    <div className="absolute right-0 mt-1 w-80 bg-white border border-slate-300 rounded shadow-lg p-2 z-50 space-y-2">
+                      <button 
+                        onClick={() => { setSelectedCpaFilter('ALL'); setShowCpaSearchMenu(false); }}
+                        className="w-full text-left px-2 py-1 text-xs text-emerald-700 font-bold hover:bg-emerald-50 rounded border border-emerald-200 text-center"
+                      >
+                        Mostra Tutti i Codici CPA
+                      </button>
+                      
+                      <input 
+                        type="text" 
+                        className="w-full bg-white border border-slate-300 rounded p-1.5 text-slate-800 text-xs outline-none focus:border-emerald-600 font-mono"
+                        placeholder="Cerca codice o descrizione..."
+                        value={cpaMenuSearchQuery}
+                        onChange={(e) => setCpaMenuSearchQuery(e.target.value)}
+                      />
 
-                    <div className="max-h-56 overflow-y-auto divide-y divide-slate-100">
-                      {filteredCpaSearchMenu.map(item => (
-                        <div 
-                          key={item.code}
-                          onClick={() => { setSelectedCpaFilter(item.code); setShowCpaSearchMenu(false); }}
-                          className="p-1.5 hover:bg-slate-100 cursor-pointer text-xs"
-                        >
-                          <span className="font-bold text-emerald-700 font-mono mr-2">{item.code}</span>
-                          <span className="text-slate-600 line-clamp-1">{item.description}</span>
-                        </div>
-                      ))}
-                      {filteredCpaSearchMenu.length === 0 && (
-                        <div className="p-2 text-xs text-slate-400 italic text-center">Nessun codice trovato.</div>
-                      )}
+                      <div className="max-h-56 overflow-y-auto divide-y divide-slate-100">
+                        {filteredCpaSearchMenu.map(item => (
+                          <div 
+                            key={item.code}
+                            onClick={() => { setSelectedCpaFilter(item.code); setShowCpaSearchMenu(false); }}
+                            className="p-1.5 hover:bg-slate-100 cursor-pointer text-xs"
+                          >
+                            <span className="font-bold text-emerald-700 font-mono mr-2">{item.code}</span>
+                            <span className="text-slate-600 line-clamp-1">{item.description}</span>
+                          </div>
+                        ))}
+                        {filteredCpaSearchMenu.length === 0 && (
+                          <div className="p-2 text-xs text-slate-400 italic text-center">Nessun codice trovato.</div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
 
-              <button 
-                onClick={openInsertModal}
-                className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded font-semibold text-xs shadow-xs transition-colors"
-              >
-                + Inserisci Servizio
-              </button>
+                <button 
+                  onClick={openInsertModal}
+                  className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded font-semibold text-xs shadow-xs transition-colors"
+                >
+                  + Inserisci Servizio
+                </button>
+              </div>
             </div>
+
+            {/* Campo Note Cliente a tutta larghezza (visibile se è selezionato un cliente specifico) */}
+            {selectedClientId !== 'ALL' && (
+              <div className="bg-white p-3.5 rounded border border-slate-300 shadow-md space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
+                    📝 Note per il cliente: <span className="text-emerald-800">{currentSelectedClientName}</span>
+                  </label>
+                  {noteSavedMessage && (
+                    <span className="text-xs text-emerald-600 font-medium">
+                      ✓ Nota salvata con successo!
+                    </span>
+                  )}
+                </div>
+
+                <textarea 
+                  rows={5}
+                  className="w-full bg-slate-50 border border-slate-300 rounded p-3 text-slate-800 text-xs focus:bg-white focus:border-emerald-600 outline-none"
+                  placeholder="Inserisci note univoche associate a questo cliente..."
+                  value={clientNote}
+                  onChange={(e) => setClientNote(e.target.value)}
+                />
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleSaveClientNote}
+                    disabled={isSavingNote}
+                    className="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-4 py-1.5 rounded text-xs shadow-xs transition-colors disabled:opacity-50"
+                  >
+                    {isSavingNote ? 'Salvataggio in corso...' : '💾 Salva Nota'}
+                  </button>
+                </div>
+              </div>
+            )}
+
           </div>
-
-          {/* Campo Note Cliente a tutta larghezza (visibile se è selezionato un cliente specifico) */}
-          {selectedClientId !== 'ALL' && (
-            <div className="bg-white p-3 rounded border border-slate-300 shadow-sm space-y-1">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                📝 Note per il cliente: <span className="text-emerald-800">{currentSelectedClientName}</span>
-              </label>
-              <textarea 
-                rows={5}
-                className="w-full bg-slate-50 border border-slate-300 rounded p-2.5 text-slate-800 text-xs focus:bg-white focus:border-emerald-600 outline-none"
-                placeholder="Inserisci note univoche associate a questo cliente..."
-                value={clientNote}
-                onChange={(e) => setClientNote(e.target.value)}
-                onBlur={handleSaveClientNote}
-              />
-              <p className="text-[10px] text-slate-400 italic">Le modifiche vengono salvate automaticamente uscendo dal campo.</p>
-            </div>
-          )}
 
           {/* SEZIONE VENDITE */}
           <div className="space-y-1.5">
@@ -418,68 +456,78 @@ export default function ServicesDashboard() {
                   Fornitore: Cliente
                 </span>
               </h2>
-              <span className="text-xs text-slate-500 font-mono">Righe: {salesServices.length}</span>
-            </div>
-
-            <div className="bg-white border border-slate-300 shadow-xs overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse font-sans text-xs">
-                  <thead>
-                    <tr className="bg-slate-200 border-b border-slate-300 text-slate-700 font-semibold uppercase tracking-wider">
-                      <th className="py-1.5 px-3 border-r border-slate-300 w-1/6">Cliente</th>
-                      <th className="py-1.5 px-3 border-r border-slate-300 w-1/6">Cliente / Fornitore</th>
-                      <th className="py-1.5 px-3 border-r border-slate-300">Descrizione Servizio</th>
-                      <th className="py-1.5 px-3 border-r border-slate-300 w-28 text-center">Codice CPA</th>
-                      <th className="py-1.5 px-3 border-r border-slate-300 w-24 text-center">Erogazione</th>
-                      <th className="py-1.5 px-3 border-r border-slate-300 w-24 text-center">Incasso</th>
-                      <th className="py-1.5 px-3 text-center w-20">Azione</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {salesServices.map((item, idx) => (
-                      <tr 
-                        key={item.id} 
-                        className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-emerald-50/50 transition-colors`}
-                      >
-                        <td className="py-1.5 px-3 border-r border-slate-200 font-medium text-slate-900 truncate">
-                          {item.clients?.name || 'Sconosciuto'}
-                        </td>
-                        <td className="py-1.5 px-3 border-r border-slate-200 text-slate-700 font-semibold">
-                          {item.thirdpartyname || '-'}
-                        </td>
-                        <td className="py-1.5 px-3 border-r border-slate-200 text-slate-600 truncate max-w-md" title={item.servicedescription}>
-                          {item.servicedescription}
-                        </td>
-                        <td className="py-1.5 px-3 border-r border-slate-200 text-center font-mono font-bold text-slate-800">
-                          {item.cpacode}
-                        </td>
-                        <td className="py-1.5 px-3 border-r border-slate-200 text-center font-semibold text-slate-700">
-                          {item.delivery}
-                        </td>
-                        <td className="py-1.5 px-3 border-r border-slate-200 text-center font-semibold text-slate-700">
-                          {item.collectiontype}
-                        </td>
-                        <td className="py-1 px-2 text-center">
-                          <button 
-                            onClick={() => openEditModal(item)}
-                            className="bg-slate-100 hover:bg-amber-100 text-amber-800 hover:text-amber-900 px-2 py-0.5 rounded border border-amber-300 text-[11px] font-medium transition-colors"
-                          >
-                            Modifica
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {salesServices.length === 0 && (
-                      <tr>
-                        <td colSpan="7" className="py-4 text-center text-slate-400 italic">
-                          Nessun record disponibile per i filtri selezionati.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-slate-500 font-mono">Righe: {salesServices.length}</span>
+                <button
+                  onClick={() => setSalesVisible(!salesVisible)}
+                  className="text-xs bg-white hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded border border-slate-300 shadow-xs transition-colors font-medium"
+                >
+                  {salesVisible ? 'Nascondi ▴' : 'Mostra ▾'}
+                </button>
               </div>
             </div>
+
+            {salesVisible && (
+              <div className="bg-white border border-slate-300 shadow-xs overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse font-sans text-xs">
+                    <thead>
+                      <tr className="bg-slate-200 border-b border-slate-300 text-slate-700 font-semibold uppercase tracking-wider">
+                        <th className="py-1.5 px-3 border-r border-slate-300 w-1/6">Cliente</th>
+                        <th className="py-1.5 px-3 border-r border-slate-300 w-1/6">Cliente / Fornitore</th>
+                        <th className="py-1.5 px-3 border-r border-slate-300">Descrizione Servizio</th>
+                        <th className="py-1.5 px-3 border-r border-slate-300 w-28 text-center">Codice CPA</th>
+                        <th className="py-1.5 px-3 border-r border-slate-300 w-24 text-center">Erogazione</th>
+                        <th className="py-1.5 px-3 border-r border-slate-300 w-24 text-center">Incasso</th>
+                        <th className="py-1.5 px-3 text-center w-20">Azione</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {salesServices.map((item, idx) => (
+                        <tr 
+                          key={item.id} 
+                          className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-emerald-50/50 transition-colors`}
+                        >
+                          <td className="py-1.5 px-3 border-r border-slate-200 font-medium text-slate-900 truncate">
+                            {item.clients?.name || 'Sconosciuto'}
+                          </td>
+                          <td className="py-1.5 px-3 border-r border-slate-200 text-slate-700 font-semibold">
+                            {item.thirdpartyname || '-'}
+                          </td>
+                          <td className="py-1.5 px-3 border-r border-slate-200 text-slate-600 truncate max-w-md" title={item.servicedescription}>
+                            {item.servicedescription}
+                          </td>
+                          <td className="py-1.5 px-3 border-r border-slate-200 text-center font-mono font-bold text-slate-800">
+                            {item.cpacode}
+                          </td>
+                          <td className="py-1.5 px-3 border-r border-slate-200 text-center font-semibold text-slate-700">
+                            {item.delivery}
+                          </td>
+                          <td className="py-1.5 px-3 border-r border-slate-200 text-center font-semibold text-slate-700">
+                            {item.collectiontype}
+                          </td>
+                          <td className="py-1 px-2 text-center">
+                            <button 
+                              onClick={() => openEditModal(item)}
+                              className="bg-slate-100 hover:bg-amber-100 text-amber-800 hover:text-amber-900 px-2 py-0.5 rounded border border-amber-300 text-[11px] font-medium transition-colors"
+                            >
+                              Modifica
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {salesServices.length === 0 && (
+                        <tr>
+                          <td colSpan="7" className="py-4 text-center text-slate-400 italic">
+                            Nessun record disponibile per i filtri selezionati.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* SEZIONE ACQUISTI */}
@@ -491,68 +539,78 @@ export default function ServicesDashboard() {
                   Acquirente: Cliente
                 </span>
               </h2>
-              <span className="text-xs text-slate-500 font-mono">Righe: {purchaseServices.length}</span>
-            </div>
-
-            <div className="bg-white border border-slate-300 shadow-xs overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse font-sans text-xs">
-                  <thead>
-                    <tr className="bg-slate-200 border-b border-slate-300 text-slate-700 font-semibold uppercase tracking-wider">
-                      <th className="py-1.5 px-3 border-r border-slate-300 w-1/6">Cliente</th>
-                      <th className="py-1.5 px-3 border-r border-slate-300 w-1/6">Cliente / Fornitore</th>
-                      <th className="py-1.5 px-3 border-r border-slate-300">Descrizione Servizio</th>
-                      <th className="py-1.5 px-3 border-r border-slate-300 w-28 text-center">Codice CPA</th>
-                      <th className="py-1.5 px-3 border-r border-slate-300 w-24 text-center">Erogazione</th>
-                      <th className="py-1.5 px-3 border-r border-slate-300 w-24 text-center">Incasso</th>
-                      <th className="py-1.5 px-3 text-center w-20">Azione</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {purchaseServices.map((item, idx) => (
-                      <tr 
-                        key={item.id} 
-                        className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-amber-50/50 transition-colors`}
-                      >
-                        <td className="py-1.5 px-3 border-r border-slate-200 font-medium text-slate-900 truncate">
-                          {item.clients?.name || 'Sconosciuto'}
-                        </td>
-                        <td className="py-1.5 px-3 border-r border-slate-200 text-slate-700 font-semibold">
-                          {item.thirdpartyname || '-'}
-                        </td>
-                        <td className="py-1.5 px-3 border-r border-slate-200 text-slate-600 truncate max-w-md" title={item.servicedescription}>
-                          {item.servicedescription}
-                        </td>
-                        <td className="py-1.5 px-3 border-r border-slate-200 text-center font-mono font-bold text-slate-800">
-                          {item.cpacode}
-                        </td>
-                        <td className="py-1.5 px-3 border-r border-slate-200 text-center font-semibold text-slate-700">
-                          {item.delivery}
-                        </td>
-                        <td className="py-1.5 px-3 border-r border-slate-200 text-center font-semibold text-slate-700">
-                          {item.collectiontype}
-                        </td>
-                        <td className="py-1 px-2 text-center">
-                          <button 
-                            onClick={() => openEditModal(item)}
-                            className="bg-slate-100 hover:bg-amber-100 text-amber-800 hover:text-amber-900 px-2 py-0.5 rounded border border-amber-300 text-[11px] font-medium transition-colors"
-                          >
-                            Modifica
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {purchaseServices.length === 0 && (
-                      <tr>
-                        <td colSpan="7" className="py-4 text-center text-slate-400 italic">
-                          Nessun record disponibile per i filtri selezionati.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-slate-500 font-mono">Righe: {purchaseServices.length}</span>
+                <button
+                  onClick={() => setPurchaseVisible(!purchaseVisible)}
+                  className="text-xs bg-white hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded border border-slate-300 shadow-xs transition-colors font-medium"
+                >
+                  {purchaseVisible ? 'Nascondi ▴' : 'Mostra ▾'}
+                </button>
               </div>
             </div>
+
+            {purchaseVisible && (
+              <div className="bg-white border border-slate-300 shadow-xs overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse font-sans text-xs">
+                    <thead>
+                      <tr className="bg-slate-200 border-b border-slate-300 text-slate-700 font-semibold uppercase tracking-wider">
+                        <th className="py-1.5 px-3 border-r border-slate-300 w-1/6">Cliente</th>
+                        <th className="py-1.5 px-3 border-r border-slate-300 w-1/6">Cliente / Fornitore</th>
+                        <th className="py-1.5 px-3 border-r border-slate-300">Descrizione Servizio</th>
+                        <th className="py-1.5 px-3 border-r border-slate-300 w-28 text-center">Codice CPA</th>
+                        <th className="py-1.5 px-3 border-r border-slate-300 w-24 text-center">Erogazione</th>
+                        <th className="py-1.5 px-3 border-r border-slate-300 w-24 text-center">Incasso</th>
+                        <th className="py-1.5 px-3 text-center w-20">Azione</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {purchaseServices.map((item, idx) => (
+                        <tr 
+                          key={item.id} 
+                          className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-amber-50/50 transition-colors`}
+                        >
+                          <td className="py-1.5 px-3 border-r border-slate-200 font-medium text-slate-900 truncate">
+                            {item.clients?.name || 'Sconosciuto'}
+                          </td>
+                          <td className="py-1.5 px-3 border-r border-slate-200 text-slate-700 font-semibold">
+                            {item.thirdpartyname || '-'}
+                          </td>
+                          <td className="py-1.5 px-3 border-r border-slate-200 text-slate-600 truncate max-w-md" title={item.servicedescription}>
+                            {item.servicedescription}
+                          </td>
+                          <td className="py-1.5 px-3 border-r border-slate-200 text-center font-mono font-bold text-slate-800">
+                            {item.cpacode}
+                          </td>
+                          <td className="py-1.5 px-3 border-r border-slate-200 text-center font-semibold text-slate-700">
+                            {item.delivery}
+                          </td>
+                          <td className="py-1.5 px-3 border-r border-slate-200 text-center font-semibold text-slate-700">
+                            {item.collectiontype}
+                          </td>
+                          <td className="py-1 px-2 text-center">
+                            <button 
+                              onClick={() => openEditModal(item)}
+                              className="bg-slate-100 hover:bg-amber-100 text-amber-800 hover:text-amber-900 px-2 py-0.5 rounded border border-amber-300 text-[11px] font-medium transition-colors"
+                            >
+                              Modifica
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {purchaseServices.length === 0 && (
+                        <tr>
+                          <td colSpan="7" className="py-4 text-center text-slate-400 italic">
+                            Nessun record disponibile per i filtri selezionati.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
 
         </div>
