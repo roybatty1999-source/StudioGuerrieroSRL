@@ -3,14 +3,17 @@
 import React, { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
-
 export default function IntrastatExtractor() {
   const [loading, setLoading] = useState(false);
   const [invoiceData, setInvoiceData] = useState(null);
+
+  // Inizializzazione sicura all'interno del client component
+  const getSupabaseClient = () => {
+    return createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
+  };
 
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
@@ -18,7 +21,7 @@ export default function IntrastatExtractor() {
 
     setLoading(true);
     try {
-      // 1. Upload su Supabase Storage (assicurati di creare il bucket 'fatture-pdf' su Supabase)
+      const supabase = getSupabaseClient();
       const fileName = `${Date.now()}_${file.name}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('fatture-pdf')
@@ -26,7 +29,6 @@ export default function IntrastatExtractor() {
 
       if (uploadError) throw uploadError;
 
-      // 2. Invocazione della Serverless Function locale o su Vercel
       const res = await fetch('/api/process-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -53,7 +55,7 @@ export default function IntrastatExtractor() {
 
   const handleSaveToDatabase = async () => {
     try {
-      // Salva intestazione fattura
+      const supabase = getSupabaseClient();
       const { data: fattura, error: fError } = await supabase
         .from('fatture_intrastat')
         .insert({
@@ -69,7 +71,6 @@ export default function IntrastatExtractor() {
 
       if (fError) throw fError;
 
-      // Salva righe articoli
       const righeArticoli = invoiceData.articoli.map((art) => ({
         fattura_id: fattura.id,
         descrizione: art.descrizione,
@@ -191,7 +192,7 @@ export default function IntrastatExtractor() {
                       onChange={(e) => handleArticleChange(idx, 'pesoNettoKg', parseFloat(e.target.value))} 
                       style={{ width: '80%', padding: '6px' }}
                     />
-                    {art.isPesoStimato && <div style={{ color: '#d97706', fontSize: '11px', marginTop: '2px' }}>Stmato da DB</div>}
+                    {art.isPesoStimato && <div style={{ color: '#d97706', fontSize: '11px', marginTop: '2px' }}>Stimato da DB</div>}
                   </td>
                   <td>
                     <input 
