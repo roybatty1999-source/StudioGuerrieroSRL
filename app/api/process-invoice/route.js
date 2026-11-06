@@ -1,15 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenAI, Type } from '@google/genai';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
 export async function POST(request) {
   try {
+    // Inizializzazione con le tue variabili d'ambiente attuali
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
+
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
     const { filePath } = await request.json();
 
     // 1. Scarica il file PDF da Supabase Storage
