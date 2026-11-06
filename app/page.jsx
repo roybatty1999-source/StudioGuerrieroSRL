@@ -15,38 +15,41 @@ export default function IntrastatExtractor() {
     );
   };
 
-  const handleFileUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+const handleFileUpload = async (event) => {
+  const selectedFile = event.target.files[0];
+  if (!selectedFile) return;
 
-    setLoading(true);
-    try {
-      const supabase = getSupabaseClient();
-      const cleanFileName = file.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_.-]/g, '');
-      const fileName = `${Date.now()}_${cleanFileName}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('fatture-pdf')
-        .upload(fileName, file);
+  setLoading(true);
+  try {
+    const supabaseClient = getSupabaseClient();
+    
+    // Pulisce spazi e caratteri speciali dal nome del file
+    const safeName = selectedFile.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_.-]/g, '');
+    const finalName = `${Date.now()}_${safeName}`;
 
-      if (uploadError) throw uploadError;
+    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+      .from('fatture-pdf')
+      .upload(finalName, selectedFile);
 
-      const res = await fetch('/api/process-invoice', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filePath: uploadData.path })
-      });
+    if (uploadError) throw uploadError;
 
-      const parsedData = await res.json();
-      if (!res.ok) throw new Error(parsedData.error || 'Errore di elaborazione');
+    const res = await fetch('/api/process-invoice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filePath: uploadData.path })
+    });
 
-      setInvoiceData({ ...parsedData, filePath: uploadData.path });
+    const parsedData = await res.json();
+    if (!res.ok) throw new Error(parsedData.error || 'Errore di elaborazione');
 
-    } catch (err) {
-      alert(`Errore nell'elaborazione: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setInvoiceData({ ...parsedData, filePath: uploadData.path });
+
+  } catch (err) {
+    alert(`Errore nell'elaborazione: ${err.message}`);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleArticleChange = (index, field, value) => {
     const updatedArticoli = [...invoiceData.articoli];
