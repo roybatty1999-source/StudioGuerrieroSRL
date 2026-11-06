@@ -1,14 +1,15 @@
 import { GoogleGenAI } from '@google/genai';
 import { createClient } from '@supabase/supabase-js';
 
-// Inizializza Supabase con le credenziali di servizio o anonime del server
+// Imposta il timeout massimo a 60 secondi su Vercel (richiede piano Pro o evita blocchi anticipati)
+export const maxDuration = 60;
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// Funzione di supporto per attendere qualche secondo in caso di errore 503
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function POST(request) {
@@ -28,14 +29,13 @@ export async function POST(request) {
       throw new Error(`Errore nel download del file da Supabase: ${downloadError.message}`);
     }
 
-    // Converte il file in array buffer e poi in base64 per Gemini
     const arrayBuffer = await fileData.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const base64Pdf = buffer.toString('base64');
 
     let response;
-    let retries = 3; // Numero di tentativi in caso di 503
-    let delay = 2000; // 2 secondi di attesa iniziale
+    let retries = 3;
+    let delay = 2000;
 
     // 2. Chiamata a Gemini con logica di Retry per i sovraccarichi (503)
     for (let i = 0; i < retries; i++) {
@@ -54,22 +54,19 @@ export async function POST(request) {
             },
           ],
         });
-        break; // Se ha successo, esce dal ciclo
+        break;
       } catch (err) {
-        // Se è l'ultimo tentativo o non riguarda un errore di servizio (503), rilancia l'errore
         if (i === retries - 1 || (!err.message.includes('503') && !err.message.includes('UNAVAILABLE'))) {
           throw err;
         }
         console.warn(`Tentativo ${i + 1} fallito per sovraccarico (503). Riprovo tra ${delay / 1000} secondi...`);
         await sleep(delay);
-        delay *= 2; // Raddoppia l'attesa (backoff esponenziale)
+        delay *= 2;
       }
     }
 
-    // Estrae il testo della risposta generata da Gemini
     const textResult = response.text ? response.text() : JSON.stringify(response);
 
-    // Pulizia e parsing del JSON restituito da Gemini (rimuove eventuali blocchi markdown di codice)
     let cleanedJson = textResult.trim();
     if (cleanedJson.startsWith('```json')) {
       cleanedJson = cleanedJson.replace(/^```json/, '').replace(/```\$/, '').trim();
@@ -83,6 +80,7 @@ export async function POST(request) {
 
   } catch (err) {
     console.error('Errore durante l\'elaborazione dell\'API:', err);
+    // Restituisce sempre un JSON valido anche in caso di errore, evitando Unexpected token 'A'
     return Response.json({ error: err.message }, { status: 500 });
   }
 }
