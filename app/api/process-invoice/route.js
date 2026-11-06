@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 
-export const maxDuration = 60; // Timeout esteso per sicurezza
+export const maxDuration = 60; // Timeout esteso a 60 secondi per l'IA
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
