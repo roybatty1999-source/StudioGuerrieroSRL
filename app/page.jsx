@@ -22,7 +22,8 @@ export default function IntrastatExtractor() {
     setLoading(true);
     try {
       const supabase = getSupabaseClient();
-      const fileName = `${Date.now()}_${file.name}`;
+      const cleanFileName = file.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_.-]/g, '');
+      const fileName = `${Date.now()}_${cleanFileName}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('fatture-pdf')
         .upload(fileName, file);
