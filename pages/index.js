@@ -17,6 +17,9 @@ export default function ServicesDashboard() {
   const [clientFilterSearch, setClientFilterSearch] = useState('')
   const clientMenuRef = useRef(null)
 
+  // Stato per la nota univoca del cliente selezionato
+  const [clientNote, setClientNote] = useState('')
+
   // Filtro per Codice CPA Globale ("Ricerca")
   const [selectedCpaFilter, setSelectedCpaFilter] = useState('ALL')
   const [showCpaSearchMenu, setShowCpaSearchMenu] = useState(false)
@@ -70,13 +73,27 @@ export default function ServicesDashboard() {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
+  // Carica le note quando cambia il cliente selezionato
+  useEffect(() => {
+    if (selectedClientId === 'ALL') {
+      setClientNote('')
+    } else {
+      const currentClient = clientsList.find(c => c.id === selectedClientId)
+      setClientNote(currentClient?.note || '')
+    }
+  }, [selectedClientId, clientsList])
+
   async function loadClients() {
     const { data, error } = await supabaseClient
       .from('clients')
-      .select('id, name')
+      .select('id, name, note')
       .order('name', { ascending: true })
     if (!error && data) {
       setClientsList(data)
+      if (selectedClientId && selectedClientId !== 'ALL') {
+        const currentClient = data.find(c => c.id === selectedClientId)
+        if (currentClient) setClientNote(currentClient.note || '')
+      }
     }
   }
 
@@ -100,6 +117,20 @@ export default function ServicesDashboard() {
 
     if (!error && data) {
       setCpaDatabase(data)
+    }
+  }
+
+  // --- GESTIONE NOTE CLIENTE ---
+  async function handleSaveClientNote() {
+    if (selectedClientId === 'ALL') return
+
+    const { error } = await supabaseClient
+      .from('clients')
+      .update({ note: clientNote && clientNote.trim() !== '' ? clientNote : null })
+      .eq('id', selectedClientId)
+
+    if (!error) {
+      loadClients()
     }
   }
 
@@ -359,6 +390,24 @@ export default function ServicesDashboard() {
               </button>
             </div>
           </div>
+
+          {/* Campo Note Cliente a tutta larghezza (visibile se è selezionato un cliente specifico) */}
+          {selectedClientId !== 'ALL' && (
+            <div className="bg-white p-3 rounded border border-slate-300 shadow-sm space-y-1">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
+                📝 Note per il cliente: <span className="text-emerald-800">{currentSelectedClientName}</span>
+              </label>
+              <textarea 
+                rows={5}
+                className="w-full bg-slate-50 border border-slate-300 rounded p-2.5 text-slate-800 text-xs focus:bg-white focus:border-emerald-600 outline-none"
+                placeholder="Inserisci note univoche associate a questo cliente..."
+                value={clientNote}
+                onChange={(e) => setClientNote(e.target.value)}
+                onBlur={handleSaveClientNote}
+              />
+              <p className="text-[10px] text-slate-400 italic">Le modifiche vengono salvate automaticamente uscendo dal campo.</p>
+            </div>
+          )}
 
           {/* SEZIONE VENDITE */}
           <div className="space-y-1.5">
