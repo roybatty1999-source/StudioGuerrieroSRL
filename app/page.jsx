@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import ExcelJS from 'exceljs';
 
 export default function Home() {
   const [files, setFiles] = useState([]);
@@ -39,7 +38,7 @@ export default function Home() {
         if (!res.ok) {
           const errData = await res.json();
           console.error(`Errore nel file ${file.name}:`, errData.error);
-          continue; // Salta la fattura problematica e prosegue con le altre
+          continue; // Salta il file in errore e prosegue con gli altri
         }
 
         const data = await res.json();
@@ -50,52 +49,23 @@ export default function Home() {
         setProgress({ current: i + 1, total: files.length });
       }
 
+      if (allExtractedRows.length === 0) {
+        alert("Nessun dato estratto dalle fatture selezionate.");
+        setLoading(false);
+        return;
+      }
+
       setStatusText('Generazione file Excel in corso...');
 
-      // Carica il modello Excel dalla cartella public
-      const responseTemplate = await fetch('/intrastat_base_v3.xlsx');
-      const arrayBuffer = await responseTemplate.arrayBuffer();
-      
-      const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(arrayBuffer);
-
-      const worksheet = workbook.getWorksheet('Beni');
-
-      // Popola le righe nel foglio "Beni" (colonne a-z)
-      allExtractedRows.forEach((item) => {
-        worksheet.addRow([
-          item.tipo_operazione ?? 1,
-          item.periodo ?? 1,
-          item.mese ?? '',
-          item.anno ?? '',
-          '',
-          item.stato_fornitore ?? '',
-          item.piva_fornitore ?? '',
-          item.ammontare_euro ?? 0,
-          item.ammontare_valuta ?? 0,
-          item.natura_transazione ?? '11',
-          item.nomenclatura ?? '',
-          item.massa_netta ?? 0,
-          0,
-          item.val_statistico ?? 0,
-          item.cond_consegna ?? '',
-          item.modo_trasporto ?? '',
-          '',
-          '',
-          item.paese_provenienza ?? '',
-          item.paese_origine ?? '',
-          '',
-          item.data_fattura ?? '',
-          item.numero_fattura ?? '',
-          '',
-          '',
-          ''
-        ]);
+      const excelRes = await fetch('/api/generate-excel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows: allExtractedRows }),
       });
 
-      // Esporta e scarica il file Excel finale
-      const bufferOut = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([bufferOut], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      if (!excelRes.ok) throw new Error("Errore nella generazione del file Excel");
+
+      const blob = await excelRes.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -115,7 +85,7 @@ export default function Home() {
   return (
     <main style={{ maxWidth: '700px', margin: '40px auto', fontFamily: 'sans-serif', padding: '20px' }}>
       <h1>Estrazione Intrastat Fatture (PDF ➔ Excel)</h1>
-      <p>Seleziona uno o più file PDF di fatture. L'applicazione elaborerà i documenti in sequenza e genererà il file Excel pronto per l'invio doganale.</p>
+      <p>Seleziona uno o più file PDF di fatture. L'applicazione elaborerà i documenti in sequenza e genererà il file Excel pronto per l'invio.</p>
 
       <div style={{ margin: '20px 0', padding: '20px', border: '2px dashed #ccc', borderRadius: '8px' }}>
         <input type="file" multiple accept="application/pdf" onChange={handleFileChange} disabled={loading} />
